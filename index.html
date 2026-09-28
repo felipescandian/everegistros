@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#03070f">
 <title>OVT • Correção Interativa</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="ovt-192.png">
 
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -651,6 +656,29 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
   }
 }
 
+
+.convert-overlay{
+  position:fixed;inset:0;z-index:12000;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(0,5,12,.86);backdrop-filter:blur(8px);
+}
+.convert-overlay.show{display:flex}
+.convert-card{
+  width:min(360px,calc(100vw - 28px));
+  padding:20px;border-radius:18px;
+  background:#071624;border:1px solid rgba(17,156,255,.45);
+  box-shadow:0 20px 60px rgba(0,0,0,.55);text-align:center;
+}
+.convert-spin{
+  width:42px;height:42px;border-radius:50%;
+  border:4px solid rgba(255,255,255,.12);
+  border-top-color:#ffc21b;margin:0 auto 12px;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.convert-card h3{margin:0 0 6px;font-size:16px;color:#fff}
+.convert-card p{margin:0;color:#8ea8bf;font-size:10px;line-height:1.45}
+
 @media(max-width:390px){
   .criteria{grid-template-columns:repeat(2,1fr)}
   .discounts{grid-template-columns:repeat(2,1fr)}
@@ -697,6 +725,12 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
     <p>Informe o coordenador responsável. O app entra imediatamente; o microfone será solicitado apenas quando necessário.</p>
     <input class="start-input" id="coordinatorName" placeholder="Nome do coordenador" autocomplete="name">
     <button class="btn gold" id="startCorrection" style="width:100%;min-height:46px;margin-top:9px">Entrar na correção</button>
+    <button class="btn" id="installAppBtn" style="width:100%;min-height:42px;margin-top:7px;display:none">
+      📲 Instalar OVT no celular
+    </button>
+    <div id="sharedFileHint" style="display:none;margin-top:8px;padding:8px;border:1px solid rgba(255,194,27,.28);border-radius:10px;color:#ffc21b;font-size:9px;line-height:1.35">
+      Arquivo recebido do WhatsApp detectado. Informe seu nome e entre para iniciar a correção.
+    </div>
   </div>
 </div>
 
@@ -727,8 +761,8 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
             <small>toque no ponto onde deseja inserir um comentário</small>
           </div>
         </div>
-        <label class="btn primary" for="pdfInput">Abrir PDF</label>
-        <input type="file" id="pdfInput" accept=".pdf,application/pdf">
+        <label class="btn primary" for="pdfInput">Abrir PDF/PPTX</label>
+        <input type="file" id="pdfInput" accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation">
       </div>
 
       <div class="filebar">
@@ -936,6 +970,8 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const state = {
   coordinator:"",
   pdf:null,
+  pdfBytes:null,
+  pdfBase64:"",
   pptxViewer:null,
   fileType:null,
   originalFile:null,
@@ -1026,6 +1062,72 @@ function baseScore(){
 }
 function totalLoss(){return +(10-baseScore()).toFixed(1)}
 
+
+let deferredInstallPrompt=null;
+
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  $("installAppBtn").style.display="block";
+});
+
+$("installAppBtn")?.addEventListener("click",async()=>{
+  if(!deferredInstallPrompt)return;
+  deferredInstallPrompt.prompt();
+  try{await deferredInstallPrompt.userChoice}catch(e){}
+  deferredInstallPrompt=null;
+  $("installAppBtn").style.display="none";
+});
+
+async function consumeSharedFile(){
+  if(!("caches" in window))return false;
+  try{
+    const cache=await caches.open("ovt-share-v2");
+    const key=new URL("./__shared_file__",location.href).href;
+    const res=await cache.match(key);
+    if(!res)return false;
+    const blob=await res.blob();
+    const encoded=res.headers.get("X-OVT-Filename")||"registro.pdf";
+    let name="registro.pdf";
+    try{name=decodeURIComponent(encoded)}catch(e){name=encoded}
+    const type=res.headers.get("Content-Type")||blob.type||"application/octet-stream";
+    const file=new File([blob],name,{type});
+    await cache.delete(key);
+    await loadDocument(file);
+    return true;
+  }catch(err){
+    console.error("Falha ao consumir arquivo compartilhado",err);
+    return false;
+  }
+}
+
+async function receiveLaunchedFiles(launchParams){
+  const handles=launchParams?.files||[];
+  if(!handles.length)return;
+  try{
+    const file=await handles[0].getFile();
+    if(file && (file.type==="application/pdf" || file.type==="application/vnd.openxmlformats-officedocument.presentationml.presentation" || /\.(pdf|pptx)$/i.test(file.name))){
+      await loadDocument(file);
+    }
+  }catch(err){
+    console.error("Falha ao abrir arquivo recebido",err);
+  }
+}
+
+if("launchQueue" in window){
+  launchQueue.setConsumer(receiveLaunchedFiles);
+}
+
+if("serviceWorker" in navigator && location.protocol==="https:"){
+  navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("SW",err));
+}
+
+document.addEventListener("DOMContentLoaded",async()=>{
+  if(new URLSearchParams(location.search).get("shared")==="1"){
+    $("sharedFileHint").style.display="block";
+  }
+});
+
 async function startApp(){
   const name=$("coordinatorName").value.trim();
   if(!name){
@@ -1042,6 +1144,7 @@ async function startApp(){
   // O microfone não pode bloquear a abertura, principalmente em arquivo local (file://)
   // e em navegadores móveis. A permissão será pedida em segundo plano ou ao tocar em gravar.
   $("startOverlay").style.display="none";
+  await consumeSharedFile();
 
   // Pré-aquece o microfone sem travar a entrada no app.
   if(location.protocol!=="file:" && navigator.mediaDevices?.getUserMedia){
@@ -1224,107 +1327,85 @@ function withTimeout(promise, ms, label){
   return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
 }
 
+
+function showConvertOverlay(message){
+  $("convertStatus").textContent=message||"Convertendo PowerPoint…";
+  $("convertOverlay").classList.add("show");
+}
+function hideConvertOverlay(){
+  $("convertOverlay").classList.remove("show");
+}
+async function convertPptxToPdf(file){
+  if(!OVT_CONVERTER_URL || OVT_CONVERTER_URL.includes("SEU-CONVERSOR")){
+    throw new Error("O servidor de conversão ainda não foi configurado no aplicativo.");
+  }
+  const fd=new FormData();
+  fd.append("file",file,file.name);
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),120000);
+  try{
+    showConvertOverlay(`Enviando ${file.name}…`);
+    const res=await fetch(OVT_CONVERTER_URL.replace(/\/$/,"")+"/convert",{
+      method:"POST",
+      body:fd,
+      signal:controller.signal
+    });
+    if(!res.ok){
+      let detail="";
+      try{detail=await res.text()}catch(e){}
+      throw new Error(detail || `Falha na conversão (${res.status}).`);
+    }
+    showConvertOverlay("Conversão concluída. Abrindo o PDF…");
+    const blob=await res.blob();
+    if(!blob.size) throw new Error("O conversor retornou um arquivo vazio.");
+    return new File([blob],file.name.replace(/\.pptx$/i,"")+".pdf",{type:"application/pdf"});
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
 async function loadDocument(file){
   const lower=(file.name||"").toLowerCase();
   const isPdf=lower.endsWith(".pdf") || file.type==="application/pdf";
   const isPptx=lower.endsWith(".pptx") || file.type==="application/vnd.openxmlformats-officedocument.presentationml.presentation";
   if(!isPdf && !isPptx){
-    alert("Formato não suportado. Use PDF.");
+    alert("Formato não suportado. Use PDF ou PPTX.");
     return;
   }
 
-  state.filename=file.name;
-  state.fileType=isPptx?"pptx":"pdf";
-  state.originalFile=file;
-  state.fileBase64="";
-  setDocStatus(isPptx?"Abrindo PowerPoint…":"Abrindo PDF…");
-  $("fileName").textContent=file.name;
+  try{
+    let pdfFile=file;
+    let sourceName=file.name;
 
-  // Não convertemos o arquivo inteiro para Base64 nesta etapa.
-  // Essa conversão pode travar por muitos segundos em PDF grandes.
-  // O Base64 só será criado quando o usuário finalizar a correção.
-  state.fileBytes=await withTimeout(file.arrayBuffer(),15000,"Leitura do arquivo");
-  state.page=1;
-  state.scale=1.2;
-  state.pptxCssScale=1;
-  state.pdf=null;
-  state.pptxViewer=null;
-  state.pptxSnapshotUrl="";
-  pptxSnapshot.removeAttribute("src");
-  pptxSnapshot.style.display="none";
+    if(isPptx){
+      pdfFile=await convertPptxToPdf(file);
+    }
 
-  if(state.fileType==="pdf"){
-    $("viewerEmpty").style.display="none";
-    pptxSnapshot.style.display="none";
-    canvas.style.display="block";
-    state.pdf=await pdfjsLib.getDocument({data:state.fileBytes.slice(0)}).promise;
+    state.filename=sourceName;
+    $("fileName").textContent=isPptx ? `${sourceName} → PDF` : sourceName;
+    state.pdfBytes=await pdfFile.arrayBuffer();
+    state.pdfBase64=await fileToBase64(pdfFile);
+    state.page=1;
+    state.scale=1.2;
+    state.pdf=await pdfjsLib.getDocument({data:state.pdfBytes.slice(0)}).promise;
     state.pages=state.pdf.numPages;
+
+    $("viewerEmpty").style.display="none";
+    canvas.style.display="block";
     await fitWidth();
-    setDocStatus("");
-  }else{
-    canvas.style.display="none";
-    $("viewerEmpty").style.display="block";
-    $("viewerEmpty").innerHTML="<b>Abrindo PowerPoint…</b><br><br>O app está lendo a estrutura dos slides.";
-    setDocStatus("Lendo o PowerPoint…");
-    if(!window.PptxViewJS?.PDFViewer){
-      setDocStatus("O módulo de PowerPoint não carregou. Abra esta versão pelo GitHub Pages ou confira a conexão com a internet.",true);
-      return;
+
+    if(isPptx){
+      setDocStatus?.(`PPTX convertido com sucesso • ${state.pages} página(s).`);
+      setTimeout(()=>setDocStatus?.(""),1800);
     }
-    try{
-      state.pptxViewer=new window.PptxViewJS.PDFViewer({
-        canvas,
-        substituteCalibri:true
-      });
-
-      // Mostra em que ponto do processamento o PDF está.
-      if(typeof state.pptxViewer.on==="function"){
-        state.pptxViewer.on("loadStart",()=>setDocStatus("Lendo estrutura do PowerPoint…"));
-        state.pptxViewer.on("loadComplete",data=>setDocStatus(`Estrutura lida: ${data?.slideCount||"?"} slide(s).`));
-        state.pptxViewer.on("renderComplete",()=>setDocStatus(""));
-      }
-
-      setDocStatus(`Lendo PowerPoint (${(file.size/1024/1024).toFixed(1).replace(".",",")} MB)…`);
-      await withTimeout(state.pptxViewer.loadFile(file),30000,"Leitura do PowerPoint");
-
-      state.pages=Number(state.pptxViewer.getSlideCount?.() || 0);
-      if(!state.pages){
-        throw new Error("O arquivo foi lido, mas nenhum slide foi identificado.");
-      }
-
-      state.page=1;
-      $("pageIndicator").textContent=`1 / ${state.pages}`;
-      setDocStatus(`PowerPoint lido: ${state.pages} slide(s). Renderizando o primeiro…`);
-
-      // O visualizador deste PDF chega a desenhar o slide e depois limpa o canvas.
-      // Começamos a "fotografar" o canvas antes da renderização terminar e preservamos
-      // o primeiro frame real encontrado.
-      canvas.style.display="block";
-      pptxSnapshot.style.display="none";
-      const snapPromise=capturePptxSnapshot(5000);
-      await withTimeout(renderPptxFirstSlide(),30000,"Renderização do primeiro slide");
-      const captured=await snapPromise;
-
-      const idx=Number(state.pptxViewer.getCurrentSlideIndex?.() ?? 0);
-      state.page=Number.isFinite(idx) ? idx+1 : 1;
-      applyPptxFit();
-      $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
-      $("viewerEmpty").style.display="none";
-      if(!captured && canvasHasRealContent()){
-        await capturePptxSnapshot(500);
-      }
-      if(!state.pptxSnapshotUrl){
-        canvas.style.display="block";
-      }
-      setDocStatus(state.pptxSnapshotUrl?"":"O slide foi lido, mas não consegui congelar a imagem antes de o renderizador limpar o canvas.",!state.pptxSnapshotUrl);
-      renderMarkers();
-    }catch(err){
-      console.error("Erro PDF:",err);
-      const msg=(err && (err.message||String(err))) || "erro desconhecido";
-      setDocStatus("Falha no PowerPoint: "+msg,true);
-      $("pageIndicator").textContent=state.pages ? `1 / ${state.pages}` : "0 / 0";
-      $("viewerEmpty").style.display="block";
-      $("viewerEmpty").innerHTML="<b>O PDF foi reconhecido, mas o slide não foi renderizado.</b><br><br>Esta versão agora mostra o erro real acima, em vez de simplesmente ficar em branco.";
-    }
+  }catch(err){
+    console.error(err);
+    const msg=err?.name==="AbortError"
+      ? "A conversão demorou mais de 2 minutos."
+      : (err?.message||String(err));
+    alert("Não foi possível abrir o arquivo. "+msg);
+  }finally{
+    hideConvertOverlay();
   }
 }
 
@@ -1988,10 +2069,44 @@ $("exportBackup").onclick=()=>{
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 };
 
-function downloadText(filename,text){
+async function deliverTrainerFile(filename,text){
   const blob=new Blob([text],{type:"text/html;charset=utf-8"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  const file=new File([blob],filename,{type:"text/html"});
+
+  // Mobile: prefer the native share sheet. This is much more reliable than
+  // forcing a download, and lets the coordinator send directly by WhatsApp.
+  if(navigator.share && navigator.canShare?.({files:[file]})){
+    try{
+      await navigator.share({
+        title:"Correção OVT",
+        text:"Arquivo de correção OVT",
+        files:[file]
+      });
+      return "shared";
+    }catch(err){
+      // If the user cancelled, do not force anything.
+      if(err?.name==="AbortError") return "cancelled";
+      console.warn("Web Share failed, falling back to download",err);
+    }
+  }
+
+  // Desktop/browser fallback.
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=filename;
+  a.style.display="none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{
+    a.remove();
+    URL.revokeObjectURL(url);
+  },15000);
+  return "downloaded";
+}
+
+function downloadText(filename,text){
+  return deliverTrainerFile(filename,text);
 }
 
 $("generateViewer").onclick=async()=>{
@@ -2094,6 +2209,9 @@ canvas{max-width:100%;height:auto;background:white}.markers{position:absolute;in
 </div>
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+
+const OVT_CONVERTER_URL = "https://SEU-CONVERSOR.onrender.com";
 const DATA=${data},$=id=>document.getElementById(id),fmt=n=>Number(n).toFixed(1).replace(".",",");
 $("meta").textContent=(DATA.filename||"Registro")+" • Coordenador: "+DATA.coordinator;
 let pdf=null,pptxViewer=null,page=1,pages=0;
@@ -2351,9 +2469,38 @@ document.addEventListener("click",e=>{
 },true);
 
 (async()=>{try{await loadDeck();await render()}catch(e){console.error(e);alert("Não foi possível abrir o arquivo da correção.")}})();addEventListener("resize",()=>pages&&render());
-<\/script></body></html>`;
+<\/script>
+<div class="convert-overlay" id="convertOverlay">
+  <div class="convert-card">
+    <div class="convert-spin"></div>
+    <h3>Convertendo PowerPoint…</h3>
+    <p id="convertStatus">Preparando o arquivo para correção.</p>
+  </div>
+</div>
+
+</body></html>`;
   const safe=(state.filename||"Registro").replace(/\.(pdf|pptx)$/i,"").replace(/[^\wÀ-ÿ-]+/g,"_").replace(/_+/g,"_");
-  downloadText(safe+"_CORRIGIDO.html",viewer);
+  const finalName=safe+"_CORRIGIDO.html";
+  const btn=$("generateViewer");
+  const oldLabel=btn.textContent;
+  btn.disabled=true;
+  btn.textContent="Preparando arquivo…";
+  try{
+    const result=await deliverTrainerFile(finalName,viewer);
+    if(result==="shared"){
+      btn.textContent="✓ Compartilhado";
+    }else if(result==="downloaded"){
+      btn.textContent="✓ Arquivo gerado";
+    }else{
+      btn.textContent=oldLabel;
+    }
+  }catch(err){
+    console.error(err);
+    alert("Não foi possível gerar o arquivo para o treinador.");
+    btn.textContent=oldLabel;
+  }finally{
+    setTimeout(()=>{btn.disabled=false;btn.textContent=oldLabel},1800);
+  }
 };
 
 addEventListener("resize",()=>state.fileType&&renderMarkers());
