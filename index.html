@@ -266,7 +266,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
 .log-main p{margin:3px 0 0;color:var(--muted);font-size:9px;line-height:1.35}
 .log-side{text-align:right}
 .loss{font:800 16px "Barlow Condensed";color:var(--gold)}
-.mini-audio{margin-top:5px;width:125px;height:28px}
+.mini-audio{margin-top:5px;width:min(210px,100%);height:28px}
 .delete{
   margin-top:4px;border:0;background:transparent;color:#ff8c96;font-size:14px;cursor:pointer
 }
@@ -450,7 +450,8 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
   max-height:46vh;
   align-items:flex-start;
 }
-.split-active #pdfCanvas{
+.split-active #pdfCanvas,
+.split-active #pptxSnapshot{
   max-height:46vh;
   width:auto;
   max-width:100%;
@@ -482,10 +483,209 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
   color:#ffb0b7
 }
 
+
+.audio-preview{
+  position:fixed !important;
+  right:14px;
+  bottom:82px;
+  width:min(330px,calc(100vw - 28px));
+  z-index:9999;
+  display:none;
+  align-items:center;
+  gap:7px;
+  padding:8px 9px;
+  border-radius:14px;
+  background:rgba(4,14,24,.96);
+  border:1px solid rgba(255,194,27,.45);
+  box-shadow:0 14px 38px rgba(0,0,0,.42);
+  backdrop-filter:blur(12px);
+}
+.audio-preview.visible{display:flex !important}
+.audio-preview .timer{
+  min-width:72px;
+  font-size:9px;
+  color:#ffc21b;
+  font-weight:900;
+  white-space:nowrap;
+}
+.audio-preview audio{
+  flex:1;
+  min-width:0;
+  height:30px !important;
+}
+.audio-preview #clearAudioBtn{
+  flex:0 0 auto;
+  width:32px;
+  height:32px;
+  padding:0;
+  border-radius:10px;
+}
+.audio-preview.recording-now{
+  border-color:rgba(255,77,91,.8);
+  box-shadow:0 0 0 1px rgba(255,77,91,.18),0 14px 38px rgba(0,0,0,.42);
+}
+@media(max-width:520px){
+  .audio-preview{
+    left:10px;
+    right:10px;
+    bottom:72px;
+    width:auto;
+  }
+}
+
+
+/* ===== Correção dinâmica flutuante ===== */
+.quick-orb{
+  position:absolute;
+  z-index:55;
+  left:78%;
+  top:18%;
+  width:54px;
+  height:54px;
+  border-radius:50%;
+  border:2px solid rgba(255,194,27,.78);
+  background:linear-gradient(180deg,#0d263c,#07131f);
+  color:#ffc21b;
+  font-size:24px;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  cursor:grab;
+  box-shadow:0 10px 28px rgba(0,0,0,.48),0 0 0 4px rgba(255,194,27,.09);
+  user-select:none;
+  touch-action:none;
+}
+.quick-orb.show{display:flex}
+.quick-orb.dragging{cursor:grabbing;transform:scale(1.06)}
+.quick-orb.recording{
+  border-color:#ff5964;
+  color:#fff;
+  background:#7d1b26;
+  animation:orbPulse 1s infinite;
+}
+.quick-orb .orb-dot{
+  position:absolute;
+  right:-2px;
+  top:-2px;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:#12b8ff;
+  border:2px solid #06131f;
+}
+.quick-orb.recording .orb-dot{background:#ff5964}
+@keyframes orbPulse{
+  0%,100%{box-shadow:0 10px 28px rgba(0,0,0,.48),0 0 0 4px rgba(255,89,100,.10)}
+  50%{box-shadow:0 10px 28px rgba(0,0,0,.48),0 0 0 10px rgba(255,89,100,.16)}
+}
+
+/* O painel deixa de empurrar a página. Ele vira um pop-up flutuante. */
+#sheet.bottom-sheet{
+  position:fixed;
+  z-index:9000;
+  right:14px;
+  top:86px;
+  width:min(430px,calc(100vw - 28px));
+  max-height:calc(100vh - 174px);
+  overflow:auto;
+  margin:0;
+  border:1px solid rgba(17,156,255,.45);
+  border-radius:16px;
+  background:rgba(3,15,26,.98);
+  box-shadow:0 18px 48px rgba(0,0,0,.55);
+  backdrop-filter:blur(14px);
+}
+#sheet.bottom-sheet.hidden{display:none !important}
+#sheet .sheet-handle{display:none}
+#sheet .sheet-top{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:rgba(3,15,26,.98);
+  padding-bottom:8px;
+}
+#sheet .step-title{margin-top:9px}
+#sheet .matrix-tabs{gap:5px}
+#sheet .matrix-tab{min-height:36px;padding:7px 6px;font-size:8px}
+#sheet .criteria{gap:5px}
+#sheet .criterion{padding:8px}
+#sheet .deduction-builder{gap:6px}
+#sheet .comment-box textarea{min-height:68px}
+#sheet .sheet-actions{
+  position:sticky;
+  bottom:0;
+  padding-top:8px;
+  background:linear-gradient(180deg,rgba(3,15,26,.3),rgba(3,15,26,.98) 28%);
+}
+#sec-correct.split-active .viewer-wrap,
+#sec-correct.split-active .viewer{
+  max-height:none !important;
+}
+#sec-correct.split-active #pdfCanvas,
+#sec-correct.split-active #pptxSnapshot{
+  max-height:none !important;
+}
+
+/* Player pequeno, sempre disponível, sem rolar a página */
+.audio-preview{
+  right:14px !important;
+  bottom:78px !important;
+  top:auto !important;
+  width:min(320px,calc(100vw - 28px)) !important;
+  z-index:9100 !important;
+}
+@media(max-width:600px){
+  #sheet.bottom-sheet{
+    left:8px;
+    right:8px;
+    top:auto;
+    bottom:68px;
+    width:auto;
+    max-height:62vh;
+    border-radius:16px 16px 12px 12px;
+  }
+  .quick-orb{
+    width:50px;
+    height:50px;
+    font-size:22px;
+  }
+}
+
 @media(max-width:390px){
   .criteria{grid-template-columns:repeat(2,1fr)}
   .discounts{grid-template-columns:repeat(2,1fr)}
 }
+
+.floating-audio{
+  position:fixed;
+  right:12px;
+  bottom:12px;
+  z-index:9999;
+  width:min(340px,calc(100vw - 24px));
+  display:none;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  background:rgba(4,14,24,.97);
+  border:1px solid rgba(255,194,27,.48);
+  border-radius:14px;
+  box-shadow:0 16px 40px rgba(0,0,0,.45);
+  backdrop-filter:blur(12px);
+}
+.floating-audio.show{display:flex}
+.floating-audio .fa-meta{
+  min-width:76px;
+  font-size:8px;
+  color:#ffc21b;
+  font-weight:900;
+}
+.floating-audio audio{flex:1;min-width:0;height:30px}
+.floating-audio button{
+  border:1px solid rgba(255,255,255,.14);
+  background:#081624;color:#dce7f2;
+  width:30px;height:30px;border-radius:9px;
+}
+
 </style>
 </head>
 
@@ -494,7 +694,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
   <div class="start-card">
     <div class="start-logo">OVT</div>
     <h2>Iniciar correção</h2>
-    <p>Informe o coordenador responsável. Ao entrar, o app pode pedir acesso ao microfone uma única vez para toda a sessão.</p>
+    <p>Informe o coordenador responsável. O app entra imediatamente; o microfone será solicitado apenas quando necessário.</p>
     <input class="start-input" id="coordinatorName" placeholder="Nome do coordenador" autocomplete="name">
     <button class="btn gold" id="startCorrection" style="width:100%;min-height:46px;margin-top:9px">Entrar na correção</button>
   </div>
@@ -527,13 +727,13 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
             <small>toque no ponto onde deseja inserir um comentário</small>
           </div>
         </div>
-        <label class="btn primary" for="pdfInput">Abrir PDF/PPTX</label>
-        <input type="file" id="pdfInput" accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+        <label class="btn primary" for="pdfInput">Abrir PDF</label>
+        <input type="file" id="pdfInput" accept=".pdf,application/pdf">
       </div>
 
       <div class="filebar">
         <span>📄</span>
-        <div class="name" id="fileName">Nenhum PDF/PPTX aberto</div>
+        <div class="name" id="fileName">Nenhum PDF aberto</div>
         <div class="pagepill" id="pageIndicator">0 / 0</div>
       </div>
       <div class="doc-status" id="docStatus"></div>
@@ -541,12 +741,16 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="viewer-wrap">
         <div class="viewer" id="viewer">
           <div class="viewer-empty" id="viewerEmpty">
-            <b>Abra o PDF ou PPTX do registro.</b><br>
+            <b>Abra o PDF do registro.</b><br>
             Ele aparecerá aqui como área principal de correção.<br><br>
             Depois, toque exatamente no trecho que deseja comentar.
           </div>
           <canvas id="pdfCanvas" width="1280" height="720"></canvas>
+          <img id="pptxSnapshot" alt="Slide do PowerPoint" style="display:none;max-width:100%;height:auto;background:#fff">
           <div id="markerLayer"></div>
+          <button type="button" class="quick-orb" id="quickOrb" title="Arraste até o ponto. Toque para gravar e corrigir">
+            🎙️<span class="orb-dot"></span>
+          </button>
         </div>
 
         <div class="viewer-controls">
@@ -564,9 +768,9 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
 
       <div class="quick-note">
         <div class="hint">
-          <b style="color:#fff">Fluxo:</b> toque no documento → escolha o critério → desconto → grave/fale → salvar.
+          <b style="color:#fff">Fluxo rápido:</b> arraste o 🎙️ até o ponto → toque → grave → pontue → salve.
         </div>
-        <button class="btn gold" id="newNoteBtn">+ Comentário</button>
+        <button class="btn gold" id="newNoteBtn">+ Apontamento</button>
       </div>
     </div>
 
@@ -742,6 +946,7 @@ const state = {
   pages:0,
   scale:1.2,
   pptxCssScale:1,
+  pptxSnapshotUrl:"",
   selectedPoint:{x:.5,y:.5},
   selectedMatrix:"Padronização",
   selectedCriteria:[],
@@ -751,6 +956,10 @@ const state = {
   scores:Object.fromEntries(CRITERIA.map(c=>[c.id,c.max])),
   currentAudio:null,
   currentAudioURL:null,
+  recordingPromise:null,
+  recordingResolve:null,
+  recordingReject:null,
+  recordingToken:0,
   mediaRecorder:null,
   micStream:null,
   chunks:[],
@@ -758,6 +967,51 @@ const state = {
 };
 
 const canvas=$("pdfCanvas"), ctx=canvas.getContext("2d");
+const pptxSnapshot=$("pptxSnapshot");
+
+function activeSurface(){
+  return state.fileType==="pptx" && pptxSnapshot.style.display!=="none" ? pptxSnapshot : canvas;
+}
+
+function canvasHasRealContent(){
+  try{
+    const w=canvas.width,h=canvas.height;
+    if(!w||!h)return false;
+    const sample=ctx.getImageData(0,0,w,h).data;
+    let dark=0, colored=0;
+    const step=Math.max(4,Math.floor(sample.length/12000/4)*4);
+    for(let i=0;i<sample.length;i+=step){
+      const r=sample[i],g=sample[i+1],b=sample[i+2],a=sample[i+3];
+      if(a<10)continue;
+      if(r<245||g<245||b<245) dark++;
+      if(Math.max(r,g,b)-Math.min(r,g,b)>12) colored++;
+      if(dark>40 || colored>20)return true;
+    }
+    return false;
+  }catch(e){return false}
+}
+
+async function capturePptxSnapshot(timeoutMs=2500){
+  const started=Date.now();
+  let captured=false;
+  while(Date.now()-started<timeoutMs){
+    if(canvasHasRealContent()){
+      try{
+        const url=canvas.toDataURL("image/png");
+        if(url && url.length>1000){
+          state.pptxSnapshotUrl=url;
+          pptxSnapshot.src=url;
+          pptxSnapshot.style.display="block";
+          canvas.style.display="none";
+          captured=true;
+          break;
+        }
+      }catch(e){}
+    }
+    await new Promise(r=>setTimeout(r,80));
+  }
+  return captured;
+}
 
 function getCriterion(id){return CRITERIA.find(c=>c.id===id)}
 function standardizationLoss(){
@@ -774,24 +1028,46 @@ function totalLoss(){return +(10-baseScore()).toFixed(1)}
 
 async function startApp(){
   const name=$("coordinatorName").value.trim();
-  if(!name){alert("Informe o nome do coordenador.");$("coordinatorName").focus();return}
+  if(!name){
+    alert("Informe o nome do coordenador.");
+    $("coordinatorName").focus();
+    return;
+  }
+
   state.coordinator=name;
   $("coordinatorChip").textContent="Coord.: "+name;
   $("finishCoordinator").textContent=name;
 
-  // Solicita acesso ao microfone uma única vez no início da sessão.
-  // O stream fica aberto durante a correção para evitar novos pedidos a cada áudio.
-  if(navigator.mediaDevices?.getUserMedia){
-    try{
-      state.micStream = await navigator.mediaDevices.getUserMedia({audio:true});
-    }catch(err){
-      // A correção continua normalmente; o usuário pode conceder depois ao tocar no microfone.
-      state.micStream = null;
-    }
-  }
+  // Entra no app IMEDIATAMENTE.
+  // O microfone não pode bloquear a abertura, principalmente em arquivo local (file://)
+  // e em navegadores móveis. A permissão será pedida em segundo plano ou ao tocar em gravar.
   $("startOverlay").style.display="none";
+
+  // Pré-aquece o microfone sem travar a entrada no app.
+  if(location.protocol!=="file:" && navigator.mediaDevices?.getUserMedia){
+    navigator.mediaDevices.getUserMedia({
+      audio:{
+        echoCancellation:true,
+        noiseSuppression:true,
+        autoGainControl:true
+      }
+    }).then(stream=>{
+      state.micStream=stream;
+    }).catch(()=>{
+      state.micStream=null;
+    });
+  }
 }
-$("startCorrection").onclick=startApp;
+$("startCorrection").addEventListener("click",e=>{
+  e.preventDefault();
+  startApp();
+});
+$("coordinatorName").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    e.preventDefault();
+    startApp();
+  }
+});
 $("coordinatorName").addEventListener("keydown",e=>{if(e.key==="Enter")startApp()});
 
 function renderMatrices(){
@@ -898,12 +1174,16 @@ async function fileToBase64(file){
   });
 }
 async function blobToDataURL(blob){
-  return new Promise((resolve,reject)=>{
-    const r=new FileReader();
-    r.onload=()=>resolve(r.result);
-    r.onerror=reject;
-    r.readAsDataURL(blob);
-  });
+  if(!blob || !blob.size) throw new Error("Áudio vazio.");
+  const buffer=await blob.arrayBuffer();
+  const bytes=new Uint8Array(buffer);
+  let binary="";
+  const CHUNK=0x8000;
+  for(let i=0;i<bytes.length;i+=CHUNK){
+    binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+CHUNK,bytes.length)));
+  }
+  const type=blob.type || "audio/webm";
+  return "data:"+type+";base64,"+btoa(binary);
 }
 
 function setDocStatus(message,isError=false){
@@ -949,7 +1229,7 @@ async function loadDocument(file){
   const isPdf=lower.endsWith(".pdf") || file.type==="application/pdf";
   const isPptx=lower.endsWith(".pptx") || file.type==="application/vnd.openxmlformats-officedocument.presentationml.presentation";
   if(!isPdf && !isPptx){
-    alert("Formato não suportado. Use PDF ou PPTX.");
+    alert("Formato não suportado. Use PDF.");
     return;
   }
 
@@ -961,7 +1241,7 @@ async function loadDocument(file){
   $("fileName").textContent=file.name;
 
   // Não convertemos o arquivo inteiro para Base64 nesta etapa.
-  // Essa conversão pode travar por muitos segundos em PPTX grandes.
+  // Essa conversão pode travar por muitos segundos em PDF grandes.
   // O Base64 só será criado quando o usuário finalizar a correção.
   state.fileBytes=await withTimeout(file.arrayBuffer(),15000,"Leitura do arquivo");
   state.page=1;
@@ -969,9 +1249,13 @@ async function loadDocument(file){
   state.pptxCssScale=1;
   state.pdf=null;
   state.pptxViewer=null;
+  state.pptxSnapshotUrl="";
+  pptxSnapshot.removeAttribute("src");
+  pptxSnapshot.style.display="none";
 
   if(state.fileType==="pdf"){
     $("viewerEmpty").style.display="none";
+    pptxSnapshot.style.display="none";
     canvas.style.display="block";
     state.pdf=await pdfjsLib.getDocument({data:state.fileBytes.slice(0)}).promise;
     state.pages=state.pdf.numPages;
@@ -982,17 +1266,17 @@ async function loadDocument(file){
     $("viewerEmpty").style.display="block";
     $("viewerEmpty").innerHTML="<b>Abrindo PowerPoint…</b><br><br>O app está lendo a estrutura dos slides.";
     setDocStatus("Lendo o PowerPoint…");
-    if(!window.PptxViewJS?.PPTXViewer){
+    if(!window.PptxViewJS?.PDFViewer){
       setDocStatus("O módulo de PowerPoint não carregou. Abra esta versão pelo GitHub Pages ou confira a conexão com a internet.",true);
       return;
     }
     try{
-      state.pptxViewer=new window.PptxViewJS.PPTXViewer({
+      state.pptxViewer=new window.PptxViewJS.PDFViewer({
         canvas,
         substituteCalibri:true
       });
 
-      // Mostra em que ponto do processamento o PPTX está.
+      // Mostra em que ponto do processamento o PDF está.
       if(typeof state.pptxViewer.on==="function"){
         state.pptxViewer.on("loadStart",()=>setDocStatus("Lendo estrutura do PowerPoint…"));
         state.pptxViewer.on("loadComplete",data=>setDocStatus(`Estrutura lida: ${data?.slideCount||"?"} slide(s).`));
@@ -1011,32 +1295,45 @@ async function loadDocument(file){
       $("pageIndicator").textContent=`1 / ${state.pages}`;
       setDocStatus(`PowerPoint lido: ${state.pages} slide(s). Renderizando o primeiro…`);
 
+      // O visualizador deste PDF chega a desenhar o slide e depois limpa o canvas.
+      // Começamos a "fotografar" o canvas antes da renderização terminar e preservamos
+      // o primeiro frame real encontrado.
+      canvas.style.display="block";
+      pptxSnapshot.style.display="none";
+      const snapPromise=capturePptxSnapshot(5000);
       await withTimeout(renderPptxFirstSlide(),30000,"Renderização do primeiro slide");
+      const captured=await snapPromise;
 
       const idx=Number(state.pptxViewer.getCurrentSlideIndex?.() ?? 0);
       state.page=Number.isFinite(idx) ? idx+1 : 1;
       applyPptxFit();
       $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
       $("viewerEmpty").style.display="none";
-      canvas.style.display="block";
-      setDocStatus("");
+      if(!captured && canvasHasRealContent()){
+        await capturePptxSnapshot(500);
+      }
+      if(!state.pptxSnapshotUrl){
+        canvas.style.display="block";
+      }
+      setDocStatus(state.pptxSnapshotUrl?"":"O slide foi lido, mas não consegui congelar a imagem antes de o renderizador limpar o canvas.",!state.pptxSnapshotUrl);
       renderMarkers();
     }catch(err){
-      console.error("Erro PPTX:",err);
+      console.error("Erro PDF:",err);
       const msg=(err && (err.message||String(err))) || "erro desconhecido";
       setDocStatus("Falha no PowerPoint: "+msg,true);
       $("pageIndicator").textContent=state.pages ? `1 / ${state.pages}` : "0 / 0";
       $("viewerEmpty").style.display="block";
-      $("viewerEmpty").innerHTML="<b>O PPTX foi reconhecido, mas o slide não foi renderizado.</b><br><br>Esta versão agora mostra o erro real acima, em vez de simplesmente ficar em branco.";
+      $("viewerEmpty").innerHTML="<b>O PDF foi reconhecido, mas o slide não foi renderizado.</b><br><br>Esta versão agora mostra o erro real acima, em vez de simplesmente ficar em branco.";
     }
   }
 }
 
 function applyPptxFit(){
   if(state.fileType!=="pptx") return;
-  canvas.style.maxWidth="none";
-  canvas.style.width=`${Math.max(40,100*state.pptxCssScale)}%`;
-  canvas.style.height="auto";
+  const surface=activeSurface();
+  surface.style.maxWidth="none";
+  surface.style.width=`${Math.max(40,100*state.pptxCssScale)}%`;
+  surface.style.height="auto";
 }
 
 async function renderPage(){
@@ -1058,10 +1355,21 @@ async function renderPage(){
   if(state.fileType==="pptx" && state.pptxViewer){
     try{
       setDocStatus(`Abrindo slide ${state.page}…`);
+      state.pptxSnapshotUrl="";
+      pptxSnapshot.removeAttribute("src");
+      pptxSnapshot.style.display="none";
+      canvas.style.display="block";
+
+      const snapPromise=capturePptxSnapshot(5000);
       await state.pptxViewer.goToSlide(state.page-1);
+      const captured=await snapPromise;
+
+      if(!captured && canvasHasRealContent()){
+        await capturePptxSnapshot(500);
+      }
       applyPptxFit();
       $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
-      setDocStatus("");
+      setDocStatus(state.pptxSnapshotUrl?"":"O slide abriu, mas a imagem foi limpa antes de ser preservada.",!state.pptxSnapshotUrl);
       setTimeout(()=>renderMarkers(),30);
     }catch(err){
       console.error("Erro ao mudar slide:",err);
@@ -1121,39 +1429,137 @@ $("zoomOut").onclick=async()=>{
 $("fitBtn").onclick=fitWidth;
 
 function pointFromEvent(e){
-  const r=canvas.getBoundingClientRect();
+  const r=activeSurface().getBoundingClientRect();
   return {x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)};
 }
+
+/* Microfone/apontamento flutuante: arraste no documento e toque para abrir + gravar */
+(()=>{
+  const orb=$("quickOrb");
+  const viewer=$("viewer");
+  let dragging=false, moved=false, pointerId=null, startX=0,startY=0,origLeft=0,origTop=0;
+
+  function placeOrbFromPoint(p){
+    const surface=activeSurface();
+    const sr=surface.getBoundingClientRect();
+    const vr=viewer.getBoundingClientRect();
+    const x=(sr.left-vr.left)+p.x*sr.width;
+    const y=(sr.top-vr.top)+p.y*sr.height;
+    orb.style.left=(x-orb.offsetWidth/2)+"px";
+    orb.style.top=(y-orb.offsetHeight/2)+"px";
+  }
+
+  function syncPointFromOrb(){
+    const surface=activeSurface();
+    const sr=surface.getBoundingClientRect();
+    const or=orb.getBoundingClientRect();
+    const cx=or.left+or.width/2, cy=or.top+or.height/2;
+    state.selectedPoint={
+      x:clamp((cx-sr.left)/sr.width,0,1),
+      y:clamp((cy-sr.top)/sr.height,0,1)
+    };
+  }
+
+  orb.addEventListener("pointerdown",e=>{
+    if(!state.pdf)return;
+    e.preventDefault();e.stopPropagation();
+    pointerId=e.pointerId;
+    orb.setPointerCapture?.(pointerId);
+    dragging=true;moved=false;
+    startX=e.clientX;startY=e.clientY;
+    origLeft=parseFloat(orb.style.left)||orb.offsetLeft;
+    origTop=parseFloat(orb.style.top)||orb.offsetTop;
+    orb.classList.add("dragging");
+  });
+
+  orb.addEventListener("pointermove",e=>{
+    if(!dragging || e.pointerId!==pointerId)return;
+    e.preventDefault();e.stopPropagation();
+    const dx=e.clientX-startX,dy=e.clientY-startY;
+    if(Math.hypot(dx,dy)>5)moved=true;
+
+    const surface=activeSurface();
+    const sr=surface.getBoundingClientRect();
+    const vr=viewer.getBoundingClientRect();
+    const minL=sr.left-vr.left-orb.offsetWidth/2;
+    const maxL=sr.right-vr.left-orb.offsetWidth/2;
+    const minT=sr.top-vr.top-orb.offsetHeight/2;
+    const maxT=sr.bottom-vr.top-orb.offsetHeight/2;
+
+    orb.style.left=clamp(origLeft+dx,minL,maxL)+"px";
+    orb.style.top=clamp(origTop+dy,minT,maxT)+"px";
+    syncPointFromOrb();
+  });
+
+  async function finishPointer(e){
+    if(!dragging || (pointerId!==null && e.pointerId!==pointerId))return;
+    e.preventDefault();e.stopPropagation();
+    dragging=false;
+    orb.classList.remove("dragging");
+    try{orb.releasePointerCapture?.(pointerId)}catch(_){}
+    pointerId=null;
+    syncPointFromOrb();
+
+    if(!moved){
+      if(!$("sheet").classList.contains("hidden")){
+        if(state.mediaRecorder && state.mediaRecorder.state==="recording"){
+          await stopAndFinalizeRecording();
+        }else{
+          await startRecording();
+        }
+      }else{
+        await openSheet({autoRecord:true});
+      }
+    }
+  }
+
+  orb.addEventListener("pointerup",finishPointer);
+  orb.addEventListener("pointercancel",e=>{
+    dragging=false;moved=false;pointerId=null;orb.classList.remove("dragging");
+  });
+
+  window.addEventListener("resize",()=>{if(state.pdf)placeOrbFromPoint(state.selectedPoint)});
+  window.__placeQuickOrb=placeOrbFromPoint;
+})();
+
 $("viewer").onclick=e=>{
   if(!state.pdf)return;
-  if(e.target.classList.contains("marker"))return;
-  const r=canvas.getBoundingClientRect();
+  if(e.target.classList.contains("marker") || e.target.closest?.("#quickOrb"))return;
+  const r=activeSurface().getBoundingClientRect();
   if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
-  state.selectedPoint=pointFromEvent(e);openSheet();
+  state.selectedPoint=pointFromEvent(e);
+  window.__placeQuickOrb?.(state.selectedPoint);
+  openSheet();
 };
 $("newNoteBtn").onclick=()=>{
-  if(!state.fileType){alert("Abra um PDF ou PPTX primeiro.");return}
-  state.selectedPoint={x:.5,y:.5};openSheet();
+  if(!state.fileType){alert("Abra um PDF primeiro.");return}
+  state.selectedPoint={x:.5,y:.5};
+  window.__placeQuickOrb?.(state.selectedPoint);
+  openSheet();
 };
 
-function openSheet(){
-  // A matriz permanece na última selecionada.
-  // Critério e desconto são escolhidos novamente em cada apontamento.
+async function openSheet({autoRecord=false}={}){
   state.selectedCriteria=[];
   state.criterionDiscounts={};
   state.standardizationDiscount=null;
   renderMatrices();renderCriteria();renderDeductionBuilder();
   $("sheetPosition").textContent=`Página ${state.page} • ${state.selectedMatrix}`;
   $("commentText").value="";
-  clearCurrentAudio();
+  await clearCurrentAudio();
   $("sheet").classList.remove("hidden");
   $("sec-correct").classList.add("split-active");
-  setTimeout(()=>{ $("sheet").scrollIntoView({behavior:"smooth",block:"nearest"}); renderMarkers(); },60);
+  setTimeout(()=>renderMarkers(),20);
+  if(autoRecord){
+    setTimeout(()=>startRecording(),120);
+  }
 }
-function closeSheet(){
-  stopRecordingIfNeeded();
+async function closeSheet(){
+  if(state.mediaRecorder && state.mediaRecorder.state==="recording"){
+    await stopAndFinalizeRecording();
+  }
   $("sheet").classList.add("hidden");
   $("sec-correct").classList.remove("split-active");
+  $("quickOrb").classList.remove("recording");
   setTimeout(()=>renderMarkers(),20);
 }
 $("closeSheet").onclick=closeSheet;
@@ -1182,8 +1588,26 @@ async function saveNote(){
     return;
   }
 
+  // If the coordinator taps Salvar while the recording is still running,
+  // finish it first and WAIT for the final chunk before creating the note.
+  if(state.mediaRecorder && state.mediaRecorder.state!=="inactive"){
+    $("saveNote").disabled=true;
+    $("saveNote").textContent="Salvando áudio…";
+    await stopAndFinalizeRecording();
+  }
+
   let audioDataURL=null;
-  if(state.currentAudio)audioDataURL=await blobToDataURL(state.currentAudio);
+  if(state.currentAudio && state.currentAudio.size>0){
+    try{
+      audioDataURL=await blobToDataURL(state.currentAudio);
+    }catch(err){
+      console.error("Falha ao incorporar áudio:",err);
+      $("saveNote").disabled=false;
+      $("saveNote").textContent="Salvar apontamento";
+      alert("Não consegui incorporar este áudio. Toque novamente no microfone e grave de novo.");
+      return;
+    }
+  }
 
   const deductions = isStandard
     ? [{criterion:"standardization", criterionName:"Padronização", discount:+state.standardizationDiscount.toFixed(1)}]
@@ -1202,14 +1626,18 @@ async function saveNote(){
     audio:audioDataURL,createdAt:new Date().toISOString()
   });
 
-  recalcScores();closeSheet();renderAll();
+  recalcScores();
+  $("saveNote").disabled=false;
+  $("saveNote").textContent="Salvar apontamento";
+  await closeSheet();
+  renderAll();
 }
 $("saveNote").onclick=saveNote;
 
 function renderMarkers(){
   const layer=$("markerLayer");
   if(!state.fileType){layer.innerHTML="";return}
-  const cr=canvas.getBoundingClientRect(),vr=$("viewer").getBoundingClientRect();
+  const cr=activeSurface().getBoundingClientRect(),vr=$("viewer").getBoundingClientRect();
   const ox=cr.left-vr.left+$("viewer").scrollLeft,oy=cr.top-vr.top+$("viewer").scrollTop;
   layer.innerHTML=state.notes.map((n,i)=>({...n,num:i+1})).filter(n=>n.page===state.page)
     .map(n=>`<button class="marker ${n.audio?"has-audio":""}" data-id="${n.id}" style="left:${ox+n.x*cr.width}px;top:${oy+n.y*cr.height}px">${n.num}</button>`).join("");
@@ -1340,51 +1768,199 @@ function renderSummary(){
 }
 function renderAll(){renderMarkers();renderLog();renderSummary()}
 
-/* Áudio: máximo 60 segundos */
+/* Áudio robusto • máximo 60 segundos */
 let recordTimerStart=0;
+
 async function ensureMicStream(){
-  if(state.micStream) return state.micStream;
-  state.micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  const live=state.micStream && state.micStream.getAudioTracks().some(t=>t.readyState==="live");
+  if(live) return state.micStream;
+  state.micStream = await navigator.mediaDevices.getUserMedia({
+    audio:{
+      echoCancellation:true,
+      noiseSuppression:true,
+      autoGainControl:true
+    }
+  });
   return state.micStream;
 }
 
+function supportedAudioMime(){
+  const candidates=[
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+    "audio/ogg;codecs=opus"
+  ];
+  if(!window.MediaRecorder) return "";
+  return candidates.find(t=>MediaRecorder.isTypeSupported?.(t)) || "";
+}
+
+function setAudioDockRecording(on){
+  $("audioPreview").classList.toggle("recording-now",!!on);
+  $("quickOrb")?.classList.toggle("recording",!!on);
+  if($("quickOrb")) $("quickOrb").firstChild.nodeValue = on ? "■" : "🎙️";
+}
+
 async function startRecording(){
-  if(!navigator.mediaDevices?.getUserMedia){alert("Este navegador não disponibilizou gravação de áudio.");return}
+  if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){
+    alert("Este navegador não disponibilizou gravação de áudio.");
+    return;
+  }
   try{
+    // Do not let an old recording bleed into the new note.
+    if(state.mediaRecorder && state.mediaRecorder.state!=="inactive"){
+      await stopAndFinalizeRecording();
+    }
+
+    state.currentAudio=null;
+    if(state.currentAudioURL){
+      URL.revokeObjectURL(state.currentAudioURL);
+      state.currentAudioURL=null;
+    }
+    $("audioPlayer").removeAttribute("src");
+
     const stream=await ensureMicStream();
     state.chunks=[];
-    const mr=new MediaRecorder(stream);
+    const mime=supportedAudioMime();
+    const options=mime ? {mimeType:mime} : undefined;
+    const mr=new MediaRecorder(stream,options);
+    const token=++state.recordingToken;
     state.mediaRecorder=mr;
-    mr.ondataavailable=e=>{if(e.data.size)state.chunks.push(e.data)};
-    mr.onstop=()=>{
-      const type=mr.mimeType||"audio/webm";
-      state.currentAudio=new Blob(state.chunks,{type});
-      if(state.currentAudioURL)URL.revokeObjectURL(state.currentAudioURL);
-      state.currentAudioURL=URL.createObjectURL(state.currentAudio);
-      $("audioPlayer").src=state.currentAudioURL;
-      $("audioPreview").classList.add("visible");
-      clearInterval(state.timerId);state.timerId=null;
-      $("recordBtn").classList.remove("recording");$("recordBtn").textContent="🎙️";
+
+    state.recordingPromise=new Promise((resolve,reject)=>{
+      state.recordingResolve=resolve;
+      state.recordingReject=reject;
+    });
+
+    mr.ondataavailable=e=>{
+      if(e.data && e.data.size>0) state.chunks.push(e.data);
     };
-    mr.start();recordTimerStart=Date.now();
-    $("recordBtn").classList.add("recording");$("recordBtn").textContent="■";
-    $("audioPreview").classList.add("visible");$("audioTime").textContent="00:00 / 01:00";
+
+    mr.onerror=e=>{
+      clearInterval(state.timerId); state.timerId=null;
+      setAudioDockRecording(false);
+      $("recordBtn").classList.remove("recording");
+      $("recordBtn").textContent="🎙️";
+      const err=e?.error || new Error("Falha na gravação de áudio.");
+      state.recordingReject?.(err);
+      state.recordingResolve=null;
+      state.recordingReject=null;
+    };
+
+    mr.onstop=()=>{
+      // Ignore a stale onstop from a recorder already superseded.
+      if(token!==state.recordingToken && state.mediaRecorder!==mr) return;
+
+      clearInterval(state.timerId); state.timerId=null;
+      setAudioDockRecording(false);
+      $("recordBtn").classList.remove("recording");
+      $("recordBtn").textContent="🎙️";
+
+      const type=mr.mimeType || mime || "audio/webm";
+      const blob=new Blob(state.chunks,{type});
+
+      if(blob.size>0){
+        state.currentAudio=blob;
+        if(state.currentAudioURL) URL.revokeObjectURL(state.currentAudioURL);
+        state.currentAudioURL=URL.createObjectURL(blob);
+        $("audioPlayer").src=state.currentAudioURL;
+        $("audioPlayer").load();
+        $("audioPreview").classList.add("visible");
+        $("audioTime").textContent="✓ pronto";
+        state.recordingResolve?.(blob);
+      }else{
+        state.currentAudio=null;
+        $("audioTime").textContent="áudio vazio";
+        state.recordingReject?.(new Error("O navegador não gerou dados de áudio."));
+      }
+
+      state.recordingResolve=null;
+      state.recordingReject=null;
+    };
+
+    // timeslice forces periodic chunks; this is much safer on mobile browsers.
+    mr.start(1000);
+    recordTimerStart=Date.now();
+
+    $("recordBtn").classList.add("recording");
+    $("recordBtn").textContent="■";
+    $("audioPreview").classList.add("visible");
+    setAudioDockRecording(true);
+    $("audioTime").textContent="00:00 / 01:00";
+
     state.timerId=setInterval(()=>{
       const sec=Math.floor((Date.now()-recordTimerStart)/1000);
       $("audioTime").textContent=`${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")} / 01:00`;
-      if(sec>=60)stopRecordingIfNeeded();
+      if(sec>=60) stopAndFinalizeRecording();
     },250);
-  }catch(err){alert("Não foi possível acessar o microfone. Verifique a permissão do navegador.")}
+  }catch(err){
+    console.error(err);
+    alert("Não foi possível acessar ou iniciar o microfone. Verifique a permissão do navegador.");
+  }
 }
-function stopRecordingIfNeeded(){if(state.mediaRecorder&&state.mediaRecorder.state==="recording")state.mediaRecorder.stop()}
-function clearCurrentAudio(){
-  stopRecordingIfNeeded();state.currentAudio=null;
-  if(state.currentAudioURL){URL.revokeObjectURL(state.currentAudioURL);state.currentAudioURL=null}
-  $("audioPlayer").removeAttribute("src");$("audioPreview").classList.remove("visible");$("audioTime").textContent="00:00 / 01:00";
+
+async function stopAndFinalizeRecording(){
+  const mr=state.mediaRecorder;
+  if(!mr || mr.state==="inactive"){
+    return state.currentAudio;
+  }
+  const pending=state.recordingPromise;
+  try{
+    // requestData helps flush the final chunk on Chrome/Android.
+    if(mr.state==="recording" && typeof mr.requestData==="function"){
+      try{mr.requestData()}catch(e){}
+    }
+    mr.stop();
+  }catch(e){
+    console.warn(e);
+  }
+  try{
+    if(pending){
+      return await Promise.race([
+        pending,
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo esgotado ao finalizar o áudio.")),4000))
+      ]);
+    }
+  }catch(err){
+    console.error(err);
+  }
+  return state.currentAudio;
 }
-$("recordBtn").onclick=()=>{if(state.mediaRecorder&&state.mediaRecorder.state==="recording")stopRecordingIfNeeded();else startRecording()};
+
+function stopRecordingIfNeeded(){
+  return stopAndFinalizeRecording();
+}
+
+async function clearCurrentAudio(){
+  if(state.mediaRecorder && state.mediaRecorder.state!=="inactive"){
+    try{await stopAndFinalizeRecording()}catch(e){}
+  }
+  state.currentAudio=null;
+  state.chunks=[];
+  if(state.currentAudioURL){
+    URL.revokeObjectURL(state.currentAudioURL);
+    state.currentAudioURL=null;
+  }
+  $("audioPlayer").removeAttribute("src");
+  $("audioPreview").classList.remove("visible","recording-now");
+  $("audioTime").textContent="00:00 / 01:00";
+}
+
+$("recordBtn").onclick=async()=>{
+  if(state.mediaRecorder && state.mediaRecorder.state==="recording"){
+    await stopAndFinalizeRecording();
+  }else{
+    await startRecording();
+  }
+};
 $("clearAudioBtn").onclick=clearCurrentAudio;
-window.addEventListener("beforeunload",()=>{if(state.micStream){state.micStream.getTracks().forEach(t=>t.stop())}});
+
+window.addEventListener("beforeunload",()=>{
+  if(state.micStream){
+    state.micStream.getTracks().forEach(t=>t.stop());
+  }
+});
 
 function go(target){
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
@@ -1419,7 +1995,7 @@ function downloadText(filename,text){
 }
 
 $("generateViewer").onclick=async()=>{
-  if(!state.originalFile){alert("Abra um PDF ou PPTX antes de finalizar.");return}
+  if(!state.originalFile){alert("Abra um PDF antes de finalizar.");return}
   try{
     setDocStatus("Preparando arquivo final…");
     if(!state.fileBase64){
@@ -1499,13 +2075,18 @@ canvas{max-width:100%;height:auto;background:white}.markers{position:absolute;in
 <body><div class="app">
 <header><h1>OVT • Correção do Registro</h1><div class="meta" id="meta"></div></header>
 <div class="card"><div class="hd">Registro corrigido</div><div class="bd">
-<div class="viewer" id="viewer"><canvas id="c"></canvas><div class="markers" id="markers"></div><div class="summary-slide" id="finalSlide"></div></div>
+<div class="viewer" id="viewer"><canvas id="c"></canvas><img id="pptxImg" alt="Slide do PowerPoint" style="display:none;max-width:100%;height:auto;background:#fff"><div class="markers" id="markers"></div><div class="summary-slide" id="finalSlide"></div></div>
 <div class="controls"><button class="btn" id="prev">‹</button><span class="btn" id="page">0 / 0</span><button class="btn" id="next">›</button></div>
 <div class="detail-panel" id="detailPanel">
   <div class="tag" id="tag"></div>
   <h3 id="nt"></h3>
   <p id="np"></p>
-  <audio id="na" controls></audio>
+  <audio id="na" controls style="display:none"></audio>
+<div class="floating-audio" id="floatingAudio">
+  <div class="fa-meta" id="floatingAudioMeta">Áudio</div>
+  <audio id="floatingAudioPlayer" controls></audio>
+  <button id="floatingAudioClose" title="Fechar">×</button>
+</div>
   <div class="detail-actions"><button class="btn" id="closeDetail">Fechar apontamento</button></div>
 </div>
 </div></div>
@@ -1516,7 +2097,34 @@ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/p
 const DATA=${data},$=id=>document.getElementById(id),fmt=n=>Number(n).toFixed(1).replace(".",",");
 $("meta").textContent=(DATA.filename||"Registro")+" • Coordenador: "+DATA.coordinator;
 let pdf=null,pptxViewer=null,page=1,pages=0;
-const canvas=$("c"),ctx=canvas.getContext("2d");
+const canvas=$("c"),ctx=canvas.getContext("2d"),pptxImg=$("pptxImg");
+
+function trainerSurface(){
+  return DATA.fileType==="pptx" && pptxImg.style.display!=="none" ? pptxImg : canvas;
+}
+function trainerCanvasHasContent(){
+  try{
+    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let n=0; const step=Math.max(4,Math.floor(data.length/12000/4)*4);
+    for(let i=0;i<data.length;i+=step){
+      if(data[i]<245||data[i+1]<245||data[i+2]<245){ if(++n>40)return true; }
+    }
+  }catch(e){}
+  return false;
+}
+async function trainerCapture(ms=3500){
+  const t=Date.now();
+  while(Date.now()-t<ms){
+    if(trainerCanvasHasContent()){
+      try{
+        const u=canvas.toDataURL("image/png");
+        if(u.length>1000){pptxImg.src=u;pptxImg.style.display="block";canvas.style.display="none";return true}
+      }catch(e){}
+    }
+    await new Promise(r=>setTimeout(r,80));
+  }
+  return false;
+}
 
 function b64(){
   const s=atob(DATA.fileBase64),a=new Uint8Array(s.length);
@@ -1528,19 +2136,22 @@ function matrixLoss(matrix){return DATA.notes.filter(n=>n.matrix===matrix).reduc
 
 async function loadDeck(){
   if(DATA.fileType==="pptx"){
-    if(!window.PptxViewJS?.PPTXViewer) throw new Error("PptxViewJS indisponível");
-    pptxViewer=new window.PptxViewJS.PPTXViewer({canvas});
+    if(!window.PptxViewJS?.PDFViewer) throw new Error("PptxViewJS indisponível");
+    pptxViewer=new window.PptxViewJS.PDFViewer({canvas});
     const bytes=b64();
     const blob=new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
     const file=new File([blob],DATA.filename||"registro.pptx",{type:blob.type});
     await pptxViewer.loadFile(file);
     pages=Number(pptxViewer.getSlideCount?.()||0);
-    if(!pages) throw new Error("Nenhum slide foi identificado no PPTX.");
+    if(!pages) throw new Error("Nenhum slide foi identificado no PDF.");
+    canvas.style.display="block";pptxImg.style.display="none";
+    const snap=trainerCapture(5000);
     try{
       await pptxViewer.goToSlide(0);
     }catch(e){
       await pptxViewer.render();
     }
+    await snap;
   }else{
     pdf=await pdfjsLib.getDocument({data:b64()}).promise;
     pages=pdf.numPages;
@@ -1612,9 +2223,12 @@ async function render(){
   canvas.style.display="block";
 
   if(DATA.fileType==="pptx"){
+    pptxImg.style.display="none";pptxImg.removeAttribute("src");canvas.style.display="block";
+    const snap=trainerCapture(5000);
     await pptxViewer.goToSlide(page-1);
-    canvas.style.maxWidth="100%";
-    canvas.style.height="auto";
+    await snap;
+    trainerSurface().style.maxWidth="100%";
+    trainerSurface().style.height="auto";
     markers();
     return;
   }
@@ -1631,12 +2245,31 @@ function markers(){
     .map(n=>'<button class="m '+(n.audio?'audio':'')+'" data-id="'+n.id+'" style="left:'+(cr.left-vr.left+n.x*cr.width)+'px;top:'+(cr.top-vr.top+n.y*cr.height)+'px">'+n.num+'</button>').join("");
   document.querySelectorAll(".m").forEach(m=>m.onclick=()=>openNote(m.dataset.id))
 }
+function playFloatingAudio(src,label="Áudio"){
+  const box=$("floatingAudio"),player=$("floatingAudioPlayer");
+  $("floatingAudioMeta").textContent=label;
+  player.src=src;
+  player.load();
+  box.classList.add("show");
+  player.play().catch(()=>{});
+}
+$("floatingAudioClose").onclick=()=>{
+  const p=$("floatingAudioPlayer");
+  p.pause();p.removeAttribute("src");
+  $("floatingAudio").classList.remove("show");
+};
+
 function openNote(id){
   const n=DATA.notes.find(x=>x.id===id),total=noteTotal(n);
   $("tag").textContent=n.matrix+" • Página "+n.page+(total?" • −"+fmt(total):"");
   $("nt").textContent=(n.deductions&&n.deductions.length)?n.deductions.map(d=>d.criterionName+" (−"+fmt(d.discount)+")").join(" • "):"Padronização";
   $("np").textContent=n.text||((n.audio)?"Ouça o comentário em áudio.":"Sem observação escrita.");
-  if(n.audio){$("na").src=n.audio;$("na").style.display="block"}else{$("na").removeAttribute("src");$("na").style.display="none"}
+  if(n.audio){
+    $("na").style.display="none";
+    playFloatingAudio(n.audio,"Pág. "+n.page);
+  }else{
+    $("na").removeAttribute("src");$("na").style.display="none";
+  }
   $("viewer").classList.add("split");
   $("detailPanel").classList.add("open");
   $("detailPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
@@ -1704,6 +2337,19 @@ document.querySelectorAll(".clickable-crit").forEach(el=>{
     showCriterionDetail(el.dataset.matrix, el.dataset.criterion);
   });
 });
+
+document.addEventListener("click",e=>{
+  const a=e.target.closest("audio");
+  if(!a || a.id==="floatingAudioPlayer") return;
+  const src=a.currentSrc||a.src;
+  if(!src) return;
+  if(a.closest(".summary-detail") || a.closest(".audio-list") || a.closest(".note") || a.closest(".detail-panel")){
+    e.preventDefault();
+    a.pause();
+    playFloatingAudio(src,"Comentário");
+  }
+},true);
+
 (async()=>{try{await loadDeck();await render()}catch(e){console.error(e);alert("Não foi possível abrir o arquivo da correção.")}})();addEventListener("resize",()=>pages&&render());
 <\/script></body></html>`;
   const safe=(state.filename||"Registro").replace(/\.(pdf|pptx)$/i,"").replace(/[^\wÀ-ÿ-]+/g,"_").replace(/_+/g,"_");
