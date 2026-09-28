@@ -740,7 +740,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v26</small>
       </div>
     </div>
     <div class="top-actions">
@@ -946,8 +946,6 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
 </div>
 
 <script>
-const OVT_CONVERTER_URL = "https://ovt-converter.onrender.com";
-
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
@@ -1121,7 +1119,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=22").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=26").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1271,12 +1269,15 @@ function renderDeductionBuilder(){
 }
 
 async function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const r=new FileReader();
-    r.onload=()=>resolve(String(r.result).split(",")[1]||"");
-    r.onerror=reject;
-    r.readAsDataURL(file);
-  });
+  if(!file || !file.size) return "";
+  const buffer=await file.arrayBuffer();
+  const bytes=new Uint8Array(buffer);
+  let binary="";
+  const CHUNK=0x8000;
+  for(let i=0;i<bytes.length;i+=CHUNK){
+    binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+CHUNK,bytes.length)));
+  }
+  return btoa(binary);
 }
 async function blobToDataURL(blob){
   if(!blob || !blob.size) throw new Error("Áudio vazio.");
@@ -1302,25 +1303,6 @@ function setDocStatus(message,isError=false){
   el.className="doc-status show"+(isError?" error":"");
 }
 
-async function renderPptxFirstSlide(){
-  let lastError=null;
-  // Some decks work better when jumping explicitly to the first slide.
-  try{
-    await state.pptxViewer.goToSlide(0);
-    return true;
-  }catch(err){
-    lastError=err;
-  }
-  // Fallback to the viewer's default render method.
-  try{
-    await state.pptxViewer.render();
-    return true;
-  }catch(err){
-    lastError=err;
-  }
-  throw lastError || new Error("Falha ao renderizar o primeiro slide.");
-}
-
 function withTimeout(promise, ms, label){
   let timer;
   const timeout = new Promise((_,reject)=>{
@@ -1330,40 +1312,134 @@ function withTimeout(promise, ms, label){
 }
 
 
+function ensureConvertOverlay(){
+  let overlay=$("convertOverlay");
+  if(overlay) return overlay;
+
+  overlay=document.createElement("div");
+  overlay.className="convert-overlay";
+  overlay.id="convertOverlay";
+  overlay.innerHTML=`
+    <div class="convert-card">
+      <div class="convert-spin"></div>
+      <h3>Convertendo PowerPoint…</h3>
+      <div style="font:900 26px/1 'Barlow Condensed';color:#ffc21b;margin:8px 0 7px" id="convertPercent">0%</div>
+      <div style="height:9px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.10);margin:0 0 9px">
+        <div id="convertBar" style="width:0%;height:100%;background:linear-gradient(90deg,#119cff,#ffc21b);transition:width .22s ease"></div>
+      </div>
+      <p id="convertStatus">Preparando o arquivo para correção.</p>
+    </div>`;
+  document.body.appendChild(overlay);
+  return overlay;
+}
+function setConvertProgress(percent,message){
+  const overlay=ensureConvertOverlay();
+  const p=Math.max(0,Math.min(100,Math.round(percent||0)));
+  const pct=overlay.querySelector("#convertPercent");
+  const bar=overlay.querySelector("#convertBar");
+  const status=overlay.querySelector("#convertStatus");
+  if(pct) pct.textContent=p+"%";
+  if(bar) bar.style.width=p+"%";
+  if(status && message) status.textContent=message;
+}
 function showConvertOverlay(message){
-  $("convertStatus").textContent=message||"Convertendo PowerPoint…";
-  $("convertOverlay").classList.add("show");
+  const overlay=ensureConvertOverlay();
+  setConvertProgress(0,message||"Preparando PowerPoint…");
+  overlay.classList.add("show");
 }
 function hideConvertOverlay(){
-  $("convertOverlay").classList.remove("show");
+  const overlay=$("convertOverlay");
+  if(overlay) overlay.classList.remove("show");
 }
 async function convertPptxToPdf(file){
-  if(!OVT_CONVERTER_URL || OVT_CONVERTER_URL.includes("SEU-CONVERSOR")){
-    throw new Error("O servidor de conversão ainda não foi configurado no aplicativo.");
-  }
+  const converterUrl="https://ovt-converter.onrender.com";
   const fd=new FormData();
   fd.append("file",file,file.name);
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),120000);
-  try{
-    showConvertOverlay(`Enviando ${file.name}…`);
-    const res=await fetch(OVT_CONVERTER_URL.replace(/\/$/,"")+"/convert",{
-      method:"POST",
-      body:fd,
-      signal:controller.signal
-    });
-    if(!res.ok){
-      let detail="";
-      try{detail=await res.text()}catch(e){}
-      throw new Error(detail || `Falha na conversão (${res.status}).`);
-    }
-    showConvertOverlay("Conversão concluída. Abrindo o PDF…");
-    const blob=await res.blob();
-    if(!blob.size) throw new Error("O conversor retornou um arquivo vazio.");
-    return new File([blob],file.name.replace(/\.pptx$/i,"")+".pdf",{type:"application/pdf"});
-  }finally{
-    clearTimeout(timer);
-  }
+
+  showConvertOverlay("Preparando envio…");
+  setConvertProgress(2,"Preparando envio…");
+
+  return await new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    let simulated=5;
+    let simTimer=null;
+    let timeoutTimer=null;
+
+    const cleanup=()=>{
+      if(simTimer) clearInterval(simTimer);
+      if(timeoutTimer) clearTimeout(timeoutTimer);
+    };
+
+    xhr.open("POST",converterUrl+"/convert",true);
+    xhr.responseType="blob";
+
+    xhr.upload.onprogress=e=>{
+      if(e.lengthComputable){
+        // Upload occupies 5% to 55%.
+        const p=5+(e.loaded/e.total)*50;
+        simulated=Math.max(simulated,p);
+        setConvertProgress(p,"Enviando PowerPoint…");
+      }
+    };
+
+    xhr.upload.onload=()=>{
+      simulated=Math.max(simulated,56);
+      setConvertProgress(simulated,"Arquivo enviado. Convertendo para PDF…");
+
+      // We cannot know LibreOffice's internal percentage, so progress advances
+      // gradually while waiting, stopping at 94% until the server actually responds.
+      simTimer=setInterval(()=>{
+        if(simulated<94){
+          const step=simulated<75 ? 2 : simulated<88 ? 1 : .4;
+          simulated=Math.min(94,simulated+step);
+          setConvertProgress(simulated,"Convertendo para PDF…");
+        }
+      },850);
+    };
+
+    xhr.onload=()=>{
+      cleanup();
+      if(xhr.status>=200 && xhr.status<300){
+        const blob=xhr.response;
+        if(!blob || !blob.size){
+          reject(new Error("O conversor retornou um PDF vazio."));
+          return;
+        }
+        setConvertProgress(100,"Conversão concluída. Abrindo o PDF…");
+        setTimeout(()=>{
+          resolve(new File(
+            [blob],
+            file.name.replace(/\.pptx$/i,"")+".pdf",
+            {type:"application/pdf"}
+          ));
+        },220);
+      }else{
+        const reader=new FileReader();
+        reader.onload=()=>reject(new Error(String(reader.result||`Falha na conversão (${xhr.status}).`)));
+        reader.onerror=()=>reject(new Error(`Falha na conversão (${xhr.status}).`));
+        try{reader.readAsText(xhr.response)}catch(e){
+          reject(new Error(`Falha na conversão (${xhr.status}).`));
+        }
+      }
+    };
+
+    xhr.onerror=()=>{
+      cleanup();
+      reject(new Error("Não foi possível conectar ao conversor."));
+    };
+
+    xhr.onabort=()=>{
+      cleanup();
+      reject(new Error("A conversão foi interrompida."));
+    };
+
+    timeoutTimer=setTimeout(()=>{
+      try{xhr.abort()}catch(e){}
+      reject(new Error("A conversão ultrapassou 2 minutos."));
+    },120000);
+
+    xhr.send(fd);
+  });
 }
 
 async function loadDocument(file){
@@ -1384,6 +1460,7 @@ async function loadDocument(file){
     }
 
     state.filename=sourceName;
+    state.fileType="pdf";
     $("fileName").textContent=isPptx ? `${sourceName} → PDF` : sourceName;
     state.pdfBytes=await pdfFile.arrayBuffer();
     state.pdfBase64=await fileToBase64(pdfFile);
@@ -1391,6 +1468,7 @@ async function loadDocument(file){
     state.scale=1.2;
     state.pdf=await pdfjsLib.getDocument({data:state.pdfBytes.slice(0)}).promise;
     state.pages=state.pdf.numPages;
+    $("pageIndicator").textContent=`1 / ${state.pages}`;
 
     $("viewerEmpty").style.display="none";
     canvas.style.display="block";
@@ -1411,63 +1489,25 @@ async function loadDocument(file){
   }
 }
 
-function applyPptxFit(){
-  if(state.fileType!=="pptx") return;
-  const surface=activeSurface();
-  surface.style.maxWidth="none";
-  surface.style.width=`${Math.max(40,100*state.pptxCssScale)}%`;
-  surface.style.height="auto";
-}
-
 async function renderPage(){
-  if(state.fileType==="pdf"){
-    if(!state.fileType)return;
-    const page=await state.pdf.getPage(state.page);
-    const vp=page.getViewport({scale:state.scale});
-    canvas.width=vp.width;canvas.height=vp.height;
-    canvas.style.display="block";
-    canvas.style.width="";
-    canvas.style.maxWidth="100%";
-    canvas.style.height="auto";
-    $("viewerEmpty").style.display="none";
-    await page.render({canvasContext:ctx,viewport:vp}).promise;
-    $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
-    renderMarkers();
-    return;
-  }
-  if(state.fileType==="pptx" && state.pptxViewer){
-    try{
-      setDocStatus(`Abrindo slide ${state.page}…`);
-      state.pptxSnapshotUrl="";
-      pptxSnapshot.removeAttribute("src");
-      pptxSnapshot.style.display="none";
-      canvas.style.display="block";
-
-      const snapPromise=capturePptxSnapshot(5000);
-      await state.pptxViewer.goToSlide(state.page-1);
-      const captured=await snapPromise;
-
-      if(!captured && canvasHasRealContent()){
-        await capturePptxSnapshot(500);
-      }
-      applyPptxFit();
-      $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
-      setDocStatus(state.pptxSnapshotUrl?"":"O slide abriu, mas a imagem foi limpa antes de ser preservada.",!state.pptxSnapshotUrl);
-      setTimeout(()=>renderMarkers(),30);
-    }catch(err){
-      console.error("Erro ao mudar slide:",err);
-      setDocStatus(`Não foi possível renderizar o slide ${state.page}: ${(err&&err.message)||err}`,true);
-    }
-  }
+  if(!state.pdf)return;
+  const page=await state.pdf.getPage(state.page);
+  const vp=page.getViewport({scale:state.scale});
+  canvas.width=vp.width;
+  canvas.height=vp.height;
+  canvas.style.display="block";
+  canvas.style.width="";
+  canvas.style.maxWidth="100%";
+  canvas.style.height="auto";
+  $("viewerEmpty").style.display="none";
+  await page.render({canvasContext:ctx,viewport:vp}).promise;
+  $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
+  $("quickOrb")?.classList.add("show");
+  setTimeout(()=>window.__placeQuickOrb?.(state.selectedPoint),20);
+  renderMarkers();
 }
 
 async function fitWidth(){
-  if(state.fileType==="pptx"){
-    state.pptxCssScale=1;
-    applyPptxFit();
-    renderMarkers();
-    return;
-  }
   if(!state.pdf)return;
   const page=await state.pdf.getPage(state.page);
   const raw=page.getViewport({scale:1});
@@ -1482,32 +1522,16 @@ $("pdfInput").onchange=async e=>{
   await loadDocument(f);
 };
 $("prevBtn").onclick=async()=>{
-  if(state.page>1){
-    state.page--;
-    await renderPage();
-  }
+  if(state.pdf&&state.page>1){state.page--;await renderPage()}
 };
 $("nextBtn").onclick=async()=>{
-  if(state.page<state.pages){
-    state.page++;
-    await renderPage();
-  }
+  if(state.pdf&&state.page<state.pages){state.page++;await renderPage()}
 };
 $("zoomIn").onclick=async()=>{
-  if(state.fileType==="pptx"){
-    state.pptxCssScale=clamp(state.pptxCssScale+.15,.5,2.5);
-    applyPptxFit(); renderMarkers();
-  }else if(state.pdf){
-    state.scale=clamp(state.scale+.15,.45,3); await renderPage();
-  }
+  if(state.pdf){state.scale=clamp(state.scale+.15,.45,3);await renderPage()}
 };
 $("zoomOut").onclick=async()=>{
-  if(state.fileType==="pptx"){
-    state.pptxCssScale=clamp(state.pptxCssScale-.15,.5,2.5);
-    applyPptxFit(); renderMarkers();
-  }else if(state.pdf){
-    state.scale=clamp(state.scale-.15,.45,3); await renderPage();
-  }
+  if(state.pdf){state.scale=clamp(state.scale-.15,.45,3);await renderPage()}
 };
 $("fitBtn").onclick=fitWidth;
 
@@ -2112,22 +2136,22 @@ function downloadText(filename,text){
 }
 
 $("generateViewer").onclick=async()=>{
-  if(!state.originalFile){alert("Abra um PDF antes de finalizar.");return}
-  try{
-    setDocStatus("Preparando arquivo final…");
-    if(!state.fileBase64){
-      state.fileBase64=await withTimeout(fileToBase64(state.originalFile),60000,"Preparação do arquivo final");
-    }
-    setDocStatus("");
-  }catch(err){
-    setDocStatus("Não foi possível preparar o arquivo final: "+((err&&err.message)||err),true);
+  if(!state.pdf || !state.pdfBase64){
+    alert("Abra um PDF ou PPTX antes de finalizar.");
     return;
   }
+
+  // O documento final já está em PDF e já foi convertido para Base64 na abertura.
+  // Não tentamos reler o arquivo original aqui, porque no caso de PPTX o original
+  // não é o documento que deve ir para a devolutiva.
+  state.fileType="pdf";
+  state.fileBase64=state.pdfBase64;
+
   const payload={
     coordinator:state.coordinator,
     filename:state.filename,
-    fileType:state.fileType,
-    fileBase64:state.fileBase64,
+    fileType:"pdf",
+    fileBase64:state.pdfBase64,
     score:baseScore(),
     notes:state.notes,
     matrices:MATRICES,
@@ -2254,27 +2278,8 @@ function noteTotal(n){return (n.deductions||[]).reduce((s,d)=>s+d.discount,0)}
 function matrixLoss(matrix){return DATA.notes.filter(n=>n.matrix===matrix).reduce((s,n)=>s+noteTotal(n),0)}
 
 async function loadDeck(){
-  if(DATA.fileType==="pptx"){
-    if(!window.PptxViewJS?.PDFViewer) throw new Error("PptxViewJS indisponível");
-    pptxViewer=new window.PptxViewJS.PDFViewer({canvas});
-    const bytes=b64();
-    const blob=new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
-    const file=new File([blob],DATA.filename||"registro.pptx",{type:blob.type});
-    await pptxViewer.loadFile(file);
-    pages=Number(pptxViewer.getSlideCount?.()||0);
-    if(!pages) throw new Error("Nenhum slide foi identificado no PDF.");
-    canvas.style.display="block";pptxImg.style.display="none";
-    const snap=trainerCapture(5000);
-    try{
-      await pptxViewer.goToSlide(0);
-    }catch(e){
-      await pptxViewer.render();
-    }
-    await snap;
-  }else{
-    pdf=await pdfjsLib.getDocument({data:b64()}).promise;
-    pages=pdf.numPages;
-  }
+  pdf=await pdfjsLib.getDocument({data:b64()}).promise;
+  pages=pdf.numPages;
 }
 
 function showFinalSlide(){
@@ -2341,16 +2346,6 @@ async function render(){
   $("summaryDetail").classList.remove("open");
   canvas.style.display="block";
 
-  if(DATA.fileType==="pptx"){
-    pptxImg.style.display="none";pptxImg.removeAttribute("src");canvas.style.display="block";
-    const snap=trainerCapture(5000);
-    await pptxViewer.goToSlide(page-1);
-    await snap;
-    trainerSurface().style.maxWidth="100%";
-    trainerSurface().style.height="auto";
-    markers();
-    return;
-  }
 
   const p=await pdf.getPage(page),raw=p.getViewport({scale:1}),scale=Math.min(2,($("viewer").clientWidth-4)/raw.width),vp=p.getViewport({scale});
   canvas.width=vp.width;canvas.height=vp.height;
@@ -2471,14 +2466,6 @@ document.addEventListener("click",e=>{
 
 (async()=>{try{await loadDeck();await render()}catch(e){console.error(e);alert("Não foi possível abrir o arquivo da correção.")}})();addEventListener("resize",()=>pages&&render());
 <\/script>
-<div class="convert-overlay" id="convertOverlay">
-  <div class="convert-card">
-    <div class="convert-spin"></div>
-    <h3>Convertendo PowerPoint…</h3>
-    <p id="convertStatus">Preparando o arquivo para correção.</p>
-  </div>
-</div>
-
 </body></html>`;
   const safe=(state.filename||"Registro").replace(/\.(pdf|pptx)$/i,"").replace(/[^\wÀ-ÿ-]+/g,"_").replace(/_+/g,"_");
   const finalName=safe+"_CORRIGIDO.html";
