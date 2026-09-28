@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#03070f">
+<title>OVT • Correção Interativa</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxviewjs@1.1.9/dist/PptxViewJS.min.js"></script>
+
+<style>
+:root{
+  --bg:#02060d;
+  --bg2:#07111e;
+  --panel:#081624;
+  --panel2:#0b1b2d;
+  --blue:#119cff;
+  --blue2:#0068ff;
+  --cyan:#33d4ff;
+  --gold:#ffc21b;
+  --gold2:#ff9f00;
+  --red:#ff5c69;
+  --green:#3be28b;
+  --text:#f5f8fc;
+  --muted:#91a5ba;
+  --line:rgba(20,157,255,.33);
+  --soft:rgba(255,255,255,.07);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+body{
+  background:
+    radial-gradient(circle at 20% -10%,rgba(0,112,255,.16),transparent 28%),
+    radial-gradient(circle at 90% 30%,rgba(0,180,255,.07),transparent 22%),
+    linear-gradient(180deg,#02050a,#05101c 54%,#02050a);
+}
+button,input,textarea{font:inherit}
+button{touch-action:manipulation}
+
+.shell{
+  width:min(100%,720px);
+  margin:0 auto;
+  min-height:100vh;
+  padding:calc(10px + env(safe-area-inset-top)) 10px calc(86px + env(safe-area-inset-bottom));
+}
+.topbar{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:-10px -10px 10px;
+  padding:10px 12px;
+  background:rgba(2,7,15,.94);
+  border-bottom:1px solid rgba(17,156,255,.20);
+  backdrop-filter:blur(18px);
+}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.logo{
+  width:39px;height:39px;display:grid;place-items:center;border-radius:11px;
+  border:1px solid rgba(17,156,255,.55);
+  background:linear-gradient(145deg,rgba(17,156,255,.2),rgba(255,194,27,.07));
+  font:800 21px "Barlow Condensed";letter-spacing:.5px
+}
+.brand h1{margin:0;font:800 18px/1 "Barlow Condensed";letter-spacing:.7px}
+.brand h1 span{color:var(--blue)}
+.brand small{display:block;margin-top:2px;color:var(--muted);font-size:9px}
+.top-actions{display:flex;gap:6px}
+.icon-btn{
+  width:39px;height:39px;border-radius:11px;border:1px solid var(--line);
+  background:#071321;color:#fff;font-size:18px;cursor:pointer
+}
+
+.card{
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:linear-gradient(180deg,rgba(9,25,42,.96),rgba(4,12,22,.98));
+  box-shadow:0 12px 38px rgba(0,0,0,.32),0 0 28px rgba(0,112,255,.06);
+  margin-bottom:10px;
+}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  min-height:48px;padding:9px 11px;border-bottom:1px solid var(--soft)
+}
+.head-title{display:flex;align-items:center;gap:8px;min-width:0}
+.head-title .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 12px var(--blue)}
+.head-title strong{display:block;font:800 17px/1 "Barlow Condensed";letter-spacing:.5px}
+.head-title small{display:block;color:var(--muted);font-size:8.5px;margin-top:3px}
+.btn{
+  min-height:35px;border:1px solid var(--line);border-radius:11px;
+  background:#071421;color:#fff;padding:0 11px;font-size:10px;font-weight:800;cursor:pointer
+}
+.btn.primary{background:linear-gradient(135deg,var(--blue),var(--blue2));border-color:transparent}
+.btn.gold{background:linear-gradient(135deg,var(--gold),var(--gold2));border-color:transparent;color:#111}
+.btn.danger{color:#ff9ca5;border-color:rgba(255,92,105,.35)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+#pdfInput{display:none}
+
+.filebar{
+  display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.055);
+  font-size:10px;font-weight:700;color:#dbe8f5
+}
+.filebar .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pagepill{
+  flex:none;border:1px solid var(--line);border-radius:999px;padding:5px 9px;
+  background:#06111f;color:#e9f4ff;font-size:10px;font-weight:800
+}
+
+.viewer-wrap{padding:8px}
+.viewer{
+  position:relative;
+  min-height:340px;
+  display:flex;align-items:center;justify-content:center;
+  background:#010408;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:13px;overflow:auto;
+  touch-action:pan-x pan-y pinch-zoom;
+}
+.viewer-empty{
+  padding:46px 22px;text-align:center;color:var(--muted);font-size:11px;line-height:1.55
+}
+.viewer-empty b{color:#fff}
+#pdfCanvas{display:none;max-width:100%;height:auto;background:#fff}
+#markerLayer{position:absolute;inset:0;pointer-events:none}
+.marker{
+  position:absolute;transform:translate(-50%,-50%);
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--blue);
+  background:linear-gradient(180deg,#0a1d31,#04101d);
+  color:#fff;font-size:11px;font-weight:900;
+  display:grid;place-items:center;
+  pointer-events:auto;cursor:pointer;
+  box-shadow:0 0 0 4px rgba(17,156,255,.15),0 0 19px rgba(17,156,255,.75)
+}
+.marker.has-audio:after{
+  content:"♪";position:absolute;right:-5px;bottom:-5px;
+  width:16px;height:16px;border-radius:50%;display:grid;place-items:center;
+  font-size:8px;color:#111;background:var(--gold);border:2px solid #07111f
+}
+.viewer-controls{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  padding:8px 0 0
+}
+.controls-group{display:flex;align-items:center;gap:6px}
+
+.score-strip{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;
+  margin-bottom:10px;padding:11px 13px;border-radius:16px;
+  border:1px solid rgba(17,156,255,.55);
+  background:linear-gradient(135deg,rgba(10,37,65,.96),rgba(4,13,24,.98));
+  box-shadow:0 0 24px rgba(17,156,255,.10)
+}
+.score-strip .divider{width:1px;height:48px;background:rgba(17,156,255,.35)}
+.label{font:700 11px "Barlow Condensed";letter-spacing:.4px;color:#dfeaf6}
+.score{font:800 35px/.9 "Barlow Condensed";color:var(--gold);margin-top:3px}
+.score span{font-size:16px;color:#91a4b8}
+.count{font:800 26px/.9 "Barlow Condensed";color:var(--cyan);margin-top:4px}
+.score-right{text-align:right}
+
+.quick-note{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 11px;border-top:1px solid var(--soft);
+  background:rgba(255,255,255,.015)
+}
+.quick-note .hint{color:var(--muted);font-size:9px;line-height:1.4}
+
+.bottom-sheet{
+  position:relative;left:auto;transform:none;bottom:auto;z-index:5;width:100%;
+  max-height:none;overflow:visible;
+  border-radius:16px;
+  border:1px solid rgba(17,156,255,.34);
+  background:linear-gradient(180deg,#0a1a2b,#030a13);
+  box-shadow:none;
+  padding:10px;
+  margin:10px 0;
+  transition:none;
+}
+.bottom-sheet.hidden{display:none}
+.sheet-handle{display:none}
+.sheet-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.sheet-top strong{font:800 21px "Barlow Condensed";letter-spacing:.5px}
+.sheet-top small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
+.sheet-close{
+  width:35px;height:35px;border-radius:10px;border:1px solid rgba(255,255,255,.09);
+  background:#07131f;color:#fff;cursor:pointer
+}
+
+.step-title{
+  display:flex;align-items:center;gap:7px;margin:12px 0 7px;
+  font:800 14px "Barlow Condensed";letter-spacing:.5px
+}
+.step-title .n{
+  width:23px;height:23px;border-radius:50%;display:grid;place-items:center;
+  font:800 10px Inter;background:var(--blue);color:#fff
+}
+.criteria{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:7px
+}
+.criterion{
+  min-height:55px;padding:7px 5px;border-radius:12px;
+  border:1px solid rgba(17,156,255,.48);
+  background:linear-gradient(180deg,#0b1d30,#06111e);
+  color:#fff;font-size:9px;font-weight:800;text-align:center;cursor:pointer
+}
+.criterion span{display:block;font-size:16px;color:var(--blue);margin-bottom:3px}
+.criterion.active{
+  color:#111;border-color:var(--gold);
+  background:linear-gradient(180deg,#ffd32f,#ffa500);
+  box-shadow:0 0 20px rgba(255,190,0,.25)
+}
+.criterion.active span{color:#111}
+
+.discounts{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.discount{
+  min-height:55px;border-radius:12px;border:1px solid rgba(17,156,255,.5);
+  background:#071523;color:#fff;font:800 22px "Barlow Condensed";cursor:pointer
+}
+.discount.active{
+  color:#111;border-color:var(--gold);background:linear-gradient(180deg,#ffd22c,#ffa300);
+  box-shadow:0 0 19px rgba(255,190,0,.27)
+}
+.discount.none{font:800 10px Inter}
+
+.comment-box{
+  display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end
+}
+textarea{
+  width:100%;min-height:76px;padding:10px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);background:#020812;color:#fff;
+  outline:none;resize:vertical;font-size:10px;line-height:1.45
+}
+textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,156,255,.07)}
+.rec-col{display:flex;flex-direction:column;gap:7px}
+.rec-btn{
+  width:49px;height:49px;border-radius:50%;border:1px solid var(--line);background:#061320;color:#fff;
+  font-size:20px;cursor:pointer
+}
+.rec-btn.recording{background:var(--red);border-color:var(--red);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(255,92,105,.10)}}
+.audio-preview{
+  display:none;align-items:center;gap:7px;margin-top:7px;padding:7px 8px;
+  border-radius:11px;border:1px solid rgba(255,194,27,.20);background:rgba(255,194,27,.05)
+}
+.audio-preview.visible{display:flex}
+.audio-preview audio{width:100%;height:32px}
+.timer{font:800 12px "Barlow Condensed";color:var(--gold);white-space:nowrap}
+
+.sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.sheet-actions .btn{min-height:43px}
+
+.section{display:none}
+.section.active{display:block}
+.log{display:grid;gap:7px}
+.log-item{
+  display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:start;
+  padding:9px;border:1px solid rgba(255,255,255,.065);border-radius:12px;background:rgba(255,255,255,.023)
+}
+.log-num{
+  width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--blue);
+  color:var(--blue);font-size:10px;font-weight:900
+}
+.log-main strong{display:block;font-size:10px}
+.log-main p{margin:3px 0 0;color:var(--muted);font-size:9px;line-height:1.35}
+.log-side{text-align:right}
+.loss{font:800 16px "Barlow Condensed";color:var(--gold)}
+.mini-audio{margin-top:5px;width:125px;height:28px}
+.delete{
+  margin-top:4px;border:0;background:transparent;color:#ff8c96;font-size:14px;cursor:pointer
+}
+
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.report-box{
+  padding:11px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.022)
+}
+.report-box span{display:block;color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.7px}
+.report-box strong{display:block;margin-top:5px;font:800 22px "Barlow Condensed"}
+.chart-wrap{height:280px;padding:8px}
+
+.bottomnav{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:0;z-index:70;
+  width:min(720px,100%);display:grid;grid-template-columns:repeat(3,1fr);
+  height:72px;padding:7px 8px calc(7px + env(safe-area-inset-bottom));
+  border-top:1px solid rgba(17,156,255,.18);background:rgba(2,7,15,.97);backdrop-filter:blur(16px)
+}
+.nav{
+  border:0;border-radius:11px;background:transparent;color:#8fa3b8;
+  font-size:8.5px;font-weight:800;cursor:pointer
+}
+.nav b{display:block;font-size:18px;margin-bottom:2px}
+.nav.active{color:var(--gold);background:rgba(255,194,27,.055)}
+
+.marker-modal{
+  position:fixed;inset:0;z-index:120;display:grid;place-items:end center;padding:10px;
+  background:rgba(0,0,0,.58);backdrop-filter:blur(4px)
+}
+.marker-modal.hidden{display:none}
+.marker-card{
+  width:min(560px,100%);border-radius:18px;border:1px solid var(--line);
+  background:linear-gradient(180deg,#0a1b2d,#030a13);padding:13px;
+  box-shadow:0 20px 55px rgba(0,0,0,.5)
+}
+.marker-card .meta{color:var(--gold);font:800 13px "Barlow Condensed"}
+.marker-card h3{margin:4px 0 6px;font:800 20px "Barlow Condensed"}
+.marker-card p{margin:0;color:#c9d6e3;font-size:10px;line-height:1.5}
+.marker-card audio{width:100%;margin-top:10px}
+.marker-card .btn{width:100%;margin-top:9px;min-height:40px}
+
+
+.matrix-tabs{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:6px
+}
+.matrix-btn{
+  min-height:44px;padding:5px 4px;border-radius:11px;
+  border:1px solid rgba(17,156,255,.48);
+  background:linear-gradient(180deg,#0b1d30,#06111e);
+  color:#fff;font-size:9px;font-weight:800;text-align:center;cursor:pointer
+}
+.matrix-btn.active{
+  color:#111;border-color:var(--gold);
+  background:linear-gradient(180deg,#ffd32f,#ffa500);
+  box-shadow:0 0 20px rgba(255,190,0,.25)
+}
+.matrix-summary{display:grid;gap:9px}
+.matrix-card{
+  border:1px solid rgba(17,156,255,.25);border-radius:14px;overflow:hidden;
+  background:rgba(255,255,255,.022)
+}
+.matrix-card summary{
+  list-style:none;cursor:pointer;padding:12px;display:grid;
+  grid-template-columns:1fr auto;gap:8px;align-items:center
+}
+.matrix-card summary::-webkit-details-marker{display:none}
+.matrix-name{font:800 18px "Barlow Condensed";letter-spacing:.5px}
+.matrix-loss{font:800 20px "Barlow Condensed";color:var(--gold)}
+.matrix-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:6px}
+.matrix-bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--red));border-radius:999px}
+.matrix-body{padding:0 10px 10px;display:grid;gap:7px}
+.crit-row{
+  border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:9px;background:rgba(0,0,0,.12)
+}
+.crit-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.crit-head strong{font-size:10px}.crit-loss{font:800 15px "Barlow Condensed";color:var(--gold)}
+.audio-list{display:grid;gap:6px;margin-top:7px}
+.audio-item{padding:7px;border-radius:9px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05)}
+.audio-item .meta{font-size:8px;color:var(--muted);margin-bottom:4px}
+.audio-item p{font-size:9px;line-height:1.35;margin:0 0 5px;color:#d5e0eb}
+.audio-item audio{width:100%;height:30px}
+
+.start-overlay{
+  position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:16px;
+  background:
+    radial-gradient(circle at 50% 15%,rgba(0,119,255,.22),transparent 34%),
+    rgba(2,6,13,.98)
+}
+.start-card{
+  width:min(460px,100%);border:1px solid rgba(17,156,255,.4);border-radius:20px;
+  padding:18px;background:linear-gradient(180deg,#0a1a2b,#030a13);
+  box-shadow:0 20px 60px rgba(0,0,0,.55),0 0 34px rgba(17,156,255,.1)
+}
+.start-card .start-logo{
+  width:55px;height:55px;border-radius:15px;display:grid;place-items:center;margin:0 auto 10px;
+  border:1px solid rgba(17,156,255,.55);font:800 27px "Barlow Condensed";
+  background:rgba(17,156,255,.08)
+}
+.start-card h2{margin:0;text-align:center;font:800 27px "Barlow Condensed"}
+.start-card p{margin:5px 0 14px;text-align:center;color:var(--muted);font-size:10px;line-height:1.45}
+.start-input{
+  width:100%;min-height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.11);
+  background:#020812;color:#fff;padding:0 12px;outline:none;font-size:12px
+}
+.start-input:focus{border-color:rgba(17,156,255,.65);box-shadow:0 0 0 3px rgba(17,156,255,.07)}
+.coordinator-chip{
+  max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  padding:6px 9px;border-radius:999px;border:1px solid rgba(255,194,27,.25);
+  color:var(--gold);font-size:9px;font-weight:800;background:rgba(255,194,27,.055)
+}
+@media(max-width:430px){
+  .matrix-tabs{grid-template-columns:repeat(2,1fr)}
+}
+
+
+
+
+.criteria .criterion{position:relative}
+.criterion.multi-active{
+  color:#111;border-color:var(--gold);
+  background:linear-gradient(180deg,#ffd32f,#ffa500);
+  box-shadow:0 0 20px rgba(255,190,0,.25)
+}
+.criterion.multi-active span{color:#111}
+.criterion .check{
+  position:absolute;top:5px;right:6px;width:15px;height:15px;border-radius:50%;
+  display:grid;place-items:center;font-size:9px;border:1px solid rgba(255,255,255,.24);
+  background:rgba(0,0,0,.18)
+}
+.criterion.multi-active .check{background:#111;color:#ffd32f;border-color:#111}
+
+.deduction-builder{display:grid;gap:7px}
+.deduction-row{
+  border:1px solid rgba(17,156,255,.24);border-radius:12px;padding:8px;
+  background:rgba(255,255,255,.02)
+}
+.deduction-row .row-title{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-bottom:7px;font-size:9.5px;font-weight:800
+}
+.mini-discounts{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.mini-discount{
+  min-height:38px;border-radius:9px;border:1px solid rgba(17,156,255,.4);
+  background:#071523;color:#fff;font:800 15px "Barlow Condensed";cursor:pointer
+}
+.mini-discount.active{
+  color:#111;border-color:var(--gold);
+  background:linear-gradient(180deg,#ffd22c,#ffa300)
+}
+.custom-mini{
+  width:100%;min-height:38px;border-radius:9px;border:1px solid rgba(17,156,255,.4);
+  background:#020812;color:#fff;padding:0 7px;outline:none;font-size:10px
+}
+.standard-box{
+  display:none;padding:10px;border-radius:12px;border:1px solid rgba(255,194,27,.25);
+  background:rgba(255,194,27,.045);color:#dbe6f0;font-size:9px;line-height:1.45
+}
+.standard-box.show{display:block}
+.score-fields.hidden{display:none}
+.summary-slide{
+  display:none;width:100%;min-height:560px;padding:18px 14px;
+  background:linear-gradient(180deg,#071523,#02070d);color:#fff;align-self:stretch
+}
+.summary-slide.show{display:block}
+.summary-slide h2{margin:0;font:800 24px "Barlow Condensed";letter-spacing:.5px}
+.summary-slide .sub{color:#91a5ba;font-size:10px;margin:4px 0 14px}
+.matrix-graph{display:grid;gap:10px}
+.graph-row{display:grid;grid-template-columns:92px 1fr 48px;gap:8px;align-items:center}
+.graph-row .name{font:800 11px "Barlow Condensed"}
+.graph-track{height:16px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.graph-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#ffc21b,#ff7a00)}
+.graph-value{text-align:right;font:800 16px "Barlow Condensed";color:#ffc21b}
+.summary-note{
+  margin-top:13px;padding:9px;border-radius:11px;border:1px solid rgba(255,255,255,.07);
+  color:#9fb0c3;font-size:9px;line-height:1.45;background:rgba(255,255,255,.02)
+}
+
+
+.split-active .viewer{
+  min-height:0;
+  max-height:46vh;
+  align-items:flex-start;
+}
+.split-active #pdfCanvas{
+  max-height:46vh;
+  width:auto;
+  max-width:100%;
+  object-fit:contain;
+}
+.split-caption{
+  display:none;
+  padding:7px 10px;
+  margin-top:7px;
+  border-radius:10px;
+  background:rgba(17,156,255,.055);
+  border:1px solid rgba(17,156,255,.15);
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.4;
+}
+.split-active .split-caption{display:block}
+
+
+.doc-status{
+  display:none;margin:8px 0 0;padding:8px 10px;border-radius:10px;
+  border:1px solid rgba(17,156,255,.20);background:rgba(17,156,255,.05);
+  color:var(--muted);font-size:9px;line-height:1.4
+}
+.doc-status.show{display:block}
+.doc-status.error{
+  border-color:rgba(255,92,105,.35);
+  background:rgba(255,92,105,.06);
+  color:#ffb0b7
+}
+
+@media(max-width:390px){
+  .criteria{grid-template-columns:repeat(2,1fr)}
+  .discounts{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+
+<body>
+<div class="start-overlay" id="startOverlay">
+  <div class="start-card">
+    <div class="start-logo">OVT</div>
+    <h2>Iniciar correção</h2>
+    <p>Informe o coordenador responsável. Ao entrar, o app pode pedir acesso ao microfone uma única vez para toda a sessão.</p>
+    <input class="start-input" id="coordinatorName" placeholder="Nome do coordenador" autocomplete="name">
+    <button class="btn gold" id="startCorrection" style="width:100%;min-height:46px;margin-top:9px">Entrar na correção</button>
+  </div>
+</div>
+
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">OVT</div>
+      <div>
+        <h1>CORREÇÃO <span>INTERATIVA</span></h1>
+        <small>comentários, matrizes e áudio diretamente no registro</small>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="coordinator-chip" id="coordinatorChip">Coordenador: —</div>
+      <button class="icon-btn" id="resumeBtn" title="Resumo">☰</button>
+      <button class="icon-btn" id="finishBtn" title="Finalizar">✓</button>
+    </div>
+  </header>
+
+  <!-- TELA DE CORREÇÃO -->
+  <section id="sec-correct" class="section active">
+    <div class="card">
+      <div class="card-head">
+        <div class="head-title">
+          <div class="dot"></div>
+          <div>
+            <strong>Registro do treinador</strong>
+            <small>toque no ponto onde deseja inserir um comentário</small>
+          </div>
+        </div>
+        <label class="btn primary" for="pdfInput">Abrir PDF/PPTX</label>
+        <input type="file" id="pdfInput" accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+      </div>
+
+      <div class="filebar">
+        <span>📄</span>
+        <div class="name" id="fileName">Nenhum PDF/PPTX aberto</div>
+        <div class="pagepill" id="pageIndicator">0 / 0</div>
+      </div>
+      <div class="doc-status" id="docStatus"></div>
+
+      <div class="viewer-wrap">
+        <div class="viewer" id="viewer">
+          <div class="viewer-empty" id="viewerEmpty">
+            <b>Abra o PDF ou PPTX do registro.</b><br>
+            Ele aparecerá aqui como área principal de correção.<br><br>
+            Depois, toque exatamente no trecho que deseja comentar.
+          </div>
+          <canvas id="pdfCanvas" width="1280" height="720"></canvas>
+          <div id="markerLayer"></div>
+        </div>
+
+        <div class="viewer-controls">
+          <div class="controls-group">
+            <button class="btn" id="prevBtn">‹</button>
+            <button class="btn" id="nextBtn">›</button>
+          </div>
+          <div class="controls-group">
+            <button class="btn" id="zoomOut">−</button>
+            <button class="btn" id="fitBtn">Ajustar</button>
+            <button class="btn" id="zoomIn">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-note">
+        <div class="hint">
+          <b style="color:#fff">Fluxo:</b> toque no documento → escolha o critério → desconto → grave/fale → salvar.
+        </div>
+        <button class="btn gold" id="newNoteBtn">+ Comentário</button>
+      </div>
+    </div>
+
+    <div class="split-caption">A página permanece visível acima enquanto você registra os apontamentos.</div>
+
+<!-- PAINEL DE CORREÇÃO -->
+<div class="bottom-sheet hidden" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-top">
+    <div>
+      <strong>Novo apontamento</strong>
+      <small id="sheetPosition">Página — • ponto selecionado</small>
+    </div>
+    <button class="sheet-close" id="closeSheet">✕</button>
+  </div>
+
+  <div class="step-title"><span class="n">1</span> Matriz</div>
+  <div class="matrix-tabs" id="matrixTabs"></div>
+  <div style="margin-top:6px;color:var(--muted);font-size:8.5px;line-height:1.4">
+    Padronização aceita desconto rápido de 0,1, 0,2 ou 0,3, além de comentário e áudio.
+  </div>
+
+  <div class="standard-box" id="standardBox">
+    <div style="font-weight:800;margin-bottom:7px">Padronização</div>
+    <div style="color:var(--muted);margin-bottom:8px">
+      Registre o apontamento por texto e/ou áudio e selecione o desconto correspondente.
+    </div>
+    <div class="discounts" style="grid-template-columns:repeat(3,1fr)">
+      <button class="discount standard-discount" data-std-value="0.1">−0,1</button>
+      <button class="discount standard-discount" data-std-value="0.2">−0,2</button>
+      <button class="discount standard-discount" data-std-value="0.3">−0,3</button>
+    </div>
+  </div>
+
+  <div class="score-fields" id="scoreFields">
+    <div class="step-title"><span class="n">2</span> Critério(s)</div>
+    <div class="criteria" id="criteriaGrid"></div>
+
+    <div class="step-title"><span class="n">3</span> Desconto por critério</div>
+    <div class="deduction-builder" id="deductionBuilder">
+      <div class="viewer-empty" style="padding:12px">Selecione um ou mais critérios acima.</div>
+    </div>
+  </div>
+
+  <div class="step-title"><span class="n">4</span> Observação / áudio</div>
+  <div class="comment-box">
+    <textarea id="commentText" placeholder="Digite ou grave o motivo da perda de ponto..."></textarea>
+    <div class="rec-col">
+      <button class="rec-btn" id="recordBtn" title="Gravar áudio">🎙️</button>
+      <button class="rec-btn" id="clearAudioBtn" title="Apagar áudio">↺</button>
+    </div>
+  </div>
+
+  <div class="audio-preview" id="audioPreview">
+    <span class="timer" id="audioTime">00:00</span>
+    <audio id="audioPlayer" controls></audio>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn" id="cancelNote">Cancelar</button>
+    <button class="btn gold" id="saveNote">Salvar apontamento</button>
+  </div>
+</div>
+    <div class="card">
+      <div class="card-head">
+        <div class="head-title">
+          <span>📝</span>
+          <div><strong>Apontamentos desta correção</strong><small>toque nos marcadores do PDF para revisar</small></div>
+        </div>
+      </div>
+      <div style="padding:10px" class="log" id="notesLog">
+        <div class="viewer-empty" style="padding:16px">Ainda não há comentários.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESUMO -->
+  <section id="sec-summary" class="section">
+    <div class="card">
+      <div class="card-head">
+        <div class="head-title"><span>📊</span><div><strong>Resumo da avaliação</strong><small>resultado automático dos descontos</small></div></div>
+      </div>
+      <div style="padding:10px">
+        <div class="report-grid">
+          <div class="report-box"><span>Nota final</span><strong id="summaryScore">10,0 / 10,0</strong></div>
+          <div class="report-box"><span>Comentários</span><strong id="summaryComments">0</strong></div>
+          <div class="report-box"><span>Com áudio</span><strong id="summaryAudio">0</strong></div>
+          <div class="report-box"><span>Perda total</span><strong id="summaryLoss">0,0</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="head-title"><span>▦</span><div><strong>Perdas por matriz</strong><small>abra cada matriz para ver critérios e áudios</small></div></div>
+      </div>
+      <div style="padding:10px" class="matrix-summary" id="matrixSummary"></div>
+    </div>
+  </section>
+
+  <!-- FINALIZAR -->
+  <section id="sec-finish" class="section">
+    <div class="card">
+      <div class="card-head">
+        <div class="head-title"><span>✓</span><div><strong>Finalizar correção</strong><small>gera o registro com uma página final de resultado</small></div></div>
+      </div>
+      <div style="padding:12px">
+        <div class="report-grid" style="margin-bottom:10px">
+          <div class="report-box"><span>Resultado</span><strong id="finishScore">10,0</strong></div>
+          <div class="report-box"><span>Apontamentos</span><strong id="finishNotes">0</strong></div>
+        </div>
+        <div style="display:grid;gap:8px">
+          <div class="report-box"><span>Coordenador responsável</span><strong id="finishCoordinator">—</strong></div>
+          <button class="btn gold" id="generateViewer" style="min-height:46px">Gerar arquivo para o treinador</button>
+          <button class="btn" id="exportBackup" style="min-height:42px">Salvar backup da correção (.json)</button>
+        </div>
+        <div style="margin-top:10px;color:var(--muted);font-size:9px;line-height:1.5">
+          O arquivo final reúne o documento, os marcadores, a nota, os comentários e os áudios. Ele pode ser enviado ao treinador como um arquivo HTML interativo.
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="bottomnav">
+  <button class="nav active" data-target="correct"><b>✎</b>Correção</button>
+  <button class="nav" data-target="summary"><b>▥</b>Resumo</button>
+  <button class="nav" data-target="finish"><b>✓</b>Finalizar</button>
+</nav>
+
+<!-- MODAL DE VISUALIZAÇÃO DE UM COMENTÁRIO -->
+<div class="marker-modal hidden" id="markerModal">
+  <div class="marker-card">
+    <div class="meta" id="modalMeta">—</div>
+    <h3 id="modalTitle">—</h3>
+    <p id="modalText">—</p>
+    <audio id="modalAudio" controls style="display:none"></audio>
+    <button class="btn" id="closeMarkerModal">Fechar</button>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const MATRICES = ["Padronização","Suporte","Fundamental","Conceitual","Específica"];
+
+const CRITERIA = [
+  {id:"objective", label:"Objetivo", full:"Objetivo do treino", icon:"◎", max:.5},
+  {id:"phase", label:"Fase", full:"Fase da semana", icon:"▦", max:.5},
+  {id:"header", label:"Cabeçalho", full:"Cabeçalho", icon:"▤", max:1},
+  {id:"illustration", label:"Ilustração", full:"Ilustração", icon:"▧", max:1},
+  {id:"clarity", label:"Clareza", full:"Clareza descritiva", icon:"◌", max:1},
+  {id:"hierarchy", label:"Hierarquização", full:"Desmontagem e Hierarquização", icon:"≡", max:1.5},
+  {id:"specificity", label:"Especificidade", full:"Especificidade", icon:"⚙", max:1.5},
+  {id:"propensity", label:"Propensão", full:"Propensão", icon:"▥", max:2},
+  {id:"theme", label:"Tema", full:"Tema específico", icon:"◆", max:1}
+];
+
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n).toFixed(1).replace(".",",");
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+
+const state = {
+  coordinator:"",
+  pdf:null,
+  pptxViewer:null,
+  fileType:null,
+  originalFile:null,
+  fileBytes:null,
+  fileBase64:"",
+  filename:"",
+  page:1,
+  pages:0,
+  scale:1.2,
+  pptxCssScale:1,
+  selectedPoint:{x:.5,y:.5},
+  selectedMatrix:"Padronização",
+  selectedCriteria:[],
+  criterionDiscounts:{},
+  standardizationDiscount:null,
+  notes:[],
+  scores:Object.fromEntries(CRITERIA.map(c=>[c.id,c.max])),
+  currentAudio:null,
+  currentAudioURL:null,
+  mediaRecorder:null,
+  micStream:null,
+  chunks:[],
+  timerId:null
+};
+
+const canvas=$("pdfCanvas"), ctx=canvas.getContext("2d");
+
+function getCriterion(id){return CRITERIA.find(c=>c.id===id)}
+function standardizationLoss(){
+  return +state.notes
+    .filter(n=>n.matrix==="Padronização")
+    .reduce((s,n)=>s+(n.deductions||[]).reduce((a,d)=>a+d.discount,0),0)
+    .toFixed(1);
+}
+function baseScore(){
+  const criteriaScore=Object.values(state.scores).reduce((a,b)=>a+b,0);
+  return +Math.max(0,criteriaScore-standardizationLoss()).toFixed(1);
+}
+function totalLoss(){return +(10-baseScore()).toFixed(1)}
+
+async function startApp(){
+  const name=$("coordinatorName").value.trim();
+  if(!name){alert("Informe o nome do coordenador.");$("coordinatorName").focus();return}
+  state.coordinator=name;
+  $("coordinatorChip").textContent="Coord.: "+name;
+  $("finishCoordinator").textContent=name;
+
+  // Solicita acesso ao microfone uma única vez no início da sessão.
+  // O stream fica aberto durante a correção para evitar novos pedidos a cada áudio.
+  if(navigator.mediaDevices?.getUserMedia){
+    try{
+      state.micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    }catch(err){
+      // A correção continua normalmente; o usuário pode conceder depois ao tocar no microfone.
+      state.micStream = null;
+    }
+  }
+  $("startOverlay").style.display="none";
+}
+$("startCorrection").onclick=startApp;
+$("coordinatorName").addEventListener("keydown",e=>{if(e.key==="Enter")startApp()});
+
+function renderMatrices(){
+  $("matrixTabs").innerHTML=MATRICES.map(m=>`
+    <button class="matrix-btn ${m===state.selectedMatrix?"active":""}" data-matrix="${m}">${m}</button>
+  `).join("");
+  document.querySelectorAll(".matrix-btn").forEach(btn=>{
+    btn.onclick=()=>{
+      state.selectedMatrix=btn.dataset.matrix;
+      renderMatrices();
+      renderCriteria();
+      renderDeductionBuilder();
+    };
+  });
+}
+
+function renderCriteria(){
+  const isStandard = state.selectedMatrix==="Padronização";
+  $("standardBox").classList.toggle("show",isStandard);
+  $("scoreFields").classList.toggle("hidden",isStandard);
+
+  document.querySelectorAll(".standard-discount").forEach(btn=>{
+    btn.classList.toggle("active", Number(btn.dataset.stdValue)===state.standardizationDiscount);
+  });
+
+  $("criteriaGrid").innerHTML=CRITERIA.map(c=>`
+    <button class="criterion ${state.selectedCriteria.includes(c.id)?"multi-active":""}" data-id="${c.id}">
+      <span>${c.icon}</span>${c.label}
+      <i class="check">${state.selectedCriteria.includes(c.id)?"✓":""}</i>
+    </button>`).join("");
+
+  document.querySelectorAll(".criterion").forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.dataset.id;
+      if(state.selectedCriteria.includes(id)){
+        state.selectedCriteria=state.selectedCriteria.filter(x=>x!==id);
+        delete state.criterionDiscounts[id];
+      }else{
+        state.selectedCriteria.push(id);
+        state.criterionDiscounts[id]=0.1;
+      }
+      renderCriteria();
+      renderDeductionBuilder();
+    };
+  });
+
+  document.querySelectorAll(".standard-discount").forEach(btn=>{
+    btn.onclick=()=>{
+      state.standardizationDiscount=Number(btn.dataset.stdValue);
+      renderCriteria();
+    };
+  });
+}
+
+function setCriterionDiscount(id,value){
+  const v=Number(value);
+  if(!Number.isFinite(v) || v<=0)return;
+  state.criterionDiscounts[id]=+v.toFixed(1);
+  renderDeductionBuilder();
+}
+
+function renderDeductionBuilder(){
+  const box=$("deductionBuilder");
+  if(!state.selectedCriteria.length){
+    box.innerHTML=`<div class="viewer-empty" style="padding:12px">Selecione um ou mais critérios acima.</div>`;
+    return;
+  }
+  box.innerHTML=state.selectedCriteria.map(id=>{
+    const c=getCriterion(id), current=state.criterionDiscounts[id]??0.1;
+    return `<div class="deduction-row" data-row="${id}">
+      <div class="row-title"><span>${escapeHtml(c.full)}</span><strong>−${fmt(current)}</strong></div>
+      <div class="mini-discounts">
+        ${[0.1,0.2,0.3].map(v=>`<button class="mini-discount ${current===v?"active":""}" data-id="${id}" data-v="${v}">−${fmt(v)}</button>`).join("")}
+        <input class="custom-mini" data-custom="${id}" inputmode="decimal" placeholder="0,4+"
+          value="${current>=0.4?String(current).replace(".",","):""}">
+      </div>
+    </div>`;
+  }).join("");
+
+  box.querySelectorAll(".mini-discount").forEach(b=>{
+    b.onclick=()=>setCriterionDiscount(b.dataset.id,Number(b.dataset.v));
+  });
+  box.querySelectorAll("[data-custom]").forEach(inp=>{
+    const apply=()=>{
+      const raw=String(inp.value||"").trim().replace(",",".");
+      const v=parseFloat(raw);
+      if(!Number.isFinite(v) || v<0.4){
+        if(raw) alert("Para outro valor, use 0,4 ou mais.");
+        return;
+      }
+      setCriterionDiscount(inp.dataset.custom,v);
+    };
+    inp.onchange=apply;
+    inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();apply();}};
+  });
+}
+
+async function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(String(r.result).split(",")[1]||"");
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+async function blobToDataURL(blob){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result);
+    r.onerror=reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+function setDocStatus(message,isError=false){
+  const el=$("docStatus");
+  if(!message){
+    el.textContent="";
+    el.className="doc-status";
+    return;
+  }
+  el.textContent=message;
+  el.className="doc-status show"+(isError?" error":"");
+}
+
+async function renderPptxFirstSlide(){
+  let lastError=null;
+  // Some decks work better when jumping explicitly to the first slide.
+  try{
+    await state.pptxViewer.goToSlide(0);
+    return true;
+  }catch(err){
+    lastError=err;
+  }
+  // Fallback to the viewer's default render method.
+  try{
+    await state.pptxViewer.render();
+    return true;
+  }catch(err){
+    lastError=err;
+  }
+  throw lastError || new Error("Falha ao renderizar o primeiro slide.");
+}
+
+function withTimeout(promise, ms, label){
+  let timer;
+  const timeout = new Promise((_,reject)=>{
+    timer=setTimeout(()=>reject(new Error(label+" excedeu "+Math.round(ms/1000)+" segundos.")),ms);
+  });
+  return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
+}
+
+async function loadDocument(file){
+  const lower=(file.name||"").toLowerCase();
+  const isPdf=lower.endsWith(".pdf") || file.type==="application/pdf";
+  const isPptx=lower.endsWith(".pptx") || file.type==="application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  if(!isPdf && !isPptx){
+    alert("Formato não suportado. Use PDF ou PPTX.");
+    return;
+  }
+
+  state.filename=file.name;
+  state.fileType=isPptx?"pptx":"pdf";
+  state.originalFile=file;
+  state.fileBase64="";
+  setDocStatus(isPptx?"Abrindo PowerPoint…":"Abrindo PDF…");
+  $("fileName").textContent=file.name;
+
+  // Não convertemos o arquivo inteiro para Base64 nesta etapa.
+  // Essa conversão pode travar por muitos segundos em PPTX grandes.
+  // O Base64 só será criado quando o usuário finalizar a correção.
+  state.fileBytes=await withTimeout(file.arrayBuffer(),15000,"Leitura do arquivo");
+  state.page=1;
+  state.scale=1.2;
+  state.pptxCssScale=1;
+  state.pdf=null;
+  state.pptxViewer=null;
+
+  if(state.fileType==="pdf"){
+    $("viewerEmpty").style.display="none";
+    canvas.style.display="block";
+    state.pdf=await pdfjsLib.getDocument({data:state.fileBytes.slice(0)}).promise;
+    state.pages=state.pdf.numPages;
+    await fitWidth();
+    setDocStatus("");
+  }else{
+    canvas.style.display="none";
+    $("viewerEmpty").style.display="block";
+    $("viewerEmpty").innerHTML="<b>Abrindo PowerPoint…</b><br><br>O app está lendo a estrutura dos slides.";
+    setDocStatus("Lendo o PowerPoint…");
+    if(!window.PptxViewJS?.PPTXViewer){
+      setDocStatus("O módulo de PowerPoint não carregou. Abra esta versão pelo GitHub Pages ou confira a conexão com a internet.",true);
+      return;
+    }
+    try{
+      state.pptxViewer=new window.PptxViewJS.PPTXViewer({
+        canvas,
+        substituteCalibri:true
+      });
+
+      // Mostra em que ponto do processamento o PPTX está.
+      if(typeof state.pptxViewer.on==="function"){
+        state.pptxViewer.on("loadStart",()=>setDocStatus("Lendo estrutura do PowerPoint…"));
+        state.pptxViewer.on("loadComplete",data=>setDocStatus(`Estrutura lida: ${data?.slideCount||"?"} slide(s).`));
+        state.pptxViewer.on("renderComplete",()=>setDocStatus(""));
+      }
+
+      setDocStatus(`Lendo PowerPoint (${(file.size/1024/1024).toFixed(1).replace(".",",")} MB)…`);
+      await withTimeout(state.pptxViewer.loadFile(file),30000,"Leitura do PowerPoint");
+
+      state.pages=Number(state.pptxViewer.getSlideCount?.() || 0);
+      if(!state.pages){
+        throw new Error("O arquivo foi lido, mas nenhum slide foi identificado.");
+      }
+
+      state.page=1;
+      $("pageIndicator").textContent=`1 / ${state.pages}`;
+      setDocStatus(`PowerPoint lido: ${state.pages} slide(s). Renderizando o primeiro…`);
+
+      await withTimeout(renderPptxFirstSlide(),30000,"Renderização do primeiro slide");
+
+      const idx=Number(state.pptxViewer.getCurrentSlideIndex?.() ?? 0);
+      state.page=Number.isFinite(idx) ? idx+1 : 1;
+      applyPptxFit();
+      $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
+      $("viewerEmpty").style.display="none";
+      canvas.style.display="block";
+      setDocStatus("");
+      renderMarkers();
+    }catch(err){
+      console.error("Erro PPTX:",err);
+      const msg=(err && (err.message||String(err))) || "erro desconhecido";
+      setDocStatus("Falha no PowerPoint: "+msg,true);
+      $("pageIndicator").textContent=state.pages ? `1 / ${state.pages}` : "0 / 0";
+      $("viewerEmpty").style.display="block";
+      $("viewerEmpty").innerHTML="<b>O PPTX foi reconhecido, mas o slide não foi renderizado.</b><br><br>Esta versão agora mostra o erro real acima, em vez de simplesmente ficar em branco.";
+    }
+  }
+}
+
+function applyPptxFit(){
+  if(state.fileType!=="pptx") return;
+  canvas.style.maxWidth="none";
+  canvas.style.width=`${Math.max(40,100*state.pptxCssScale)}%`;
+  canvas.style.height="auto";
+}
+
+async function renderPage(){
+  if(state.fileType==="pdf"){
+    if(!state.fileType)return;
+    const page=await state.pdf.getPage(state.page);
+    const vp=page.getViewport({scale:state.scale});
+    canvas.width=vp.width;canvas.height=vp.height;
+    canvas.style.display="block";
+    canvas.style.width="";
+    canvas.style.maxWidth="100%";
+    canvas.style.height="auto";
+    $("viewerEmpty").style.display="none";
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+    $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
+    renderMarkers();
+    return;
+  }
+  if(state.fileType==="pptx" && state.pptxViewer){
+    try{
+      setDocStatus(`Abrindo slide ${state.page}…`);
+      await state.pptxViewer.goToSlide(state.page-1);
+      applyPptxFit();
+      $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
+      setDocStatus("");
+      setTimeout(()=>renderMarkers(),30);
+    }catch(err){
+      console.error("Erro ao mudar slide:",err);
+      setDocStatus(`Não foi possível renderizar o slide ${state.page}: ${(err&&err.message)||err}`,true);
+    }
+  }
+}
+
+async function fitWidth(){
+  if(state.fileType==="pptx"){
+    state.pptxCssScale=1;
+    applyPptxFit();
+    renderMarkers();
+    return;
+  }
+  if(!state.pdf)return;
+  const page=await state.pdf.getPage(state.page);
+  const raw=page.getViewport({scale:1});
+  const maxW=$("viewer").clientWidth-4;
+  state.scale=clamp(maxW/raw.width,.45,3);
+  await renderPage();
+}
+
+$("pdfInput").onchange=async e=>{
+  const f=e.target.files?.[0];
+  if(!f)return;
+  await loadDocument(f);
+};
+$("prevBtn").onclick=async()=>{
+  if(state.page>1){
+    state.page--;
+    await renderPage();
+  }
+};
+$("nextBtn").onclick=async()=>{
+  if(state.page<state.pages){
+    state.page++;
+    await renderPage();
+  }
+};
+$("zoomIn").onclick=async()=>{
+  if(state.fileType==="pptx"){
+    state.pptxCssScale=clamp(state.pptxCssScale+.15,.5,2.5);
+    applyPptxFit(); renderMarkers();
+  }else if(state.pdf){
+    state.scale=clamp(state.scale+.15,.45,3); await renderPage();
+  }
+};
+$("zoomOut").onclick=async()=>{
+  if(state.fileType==="pptx"){
+    state.pptxCssScale=clamp(state.pptxCssScale-.15,.5,2.5);
+    applyPptxFit(); renderMarkers();
+  }else if(state.pdf){
+    state.scale=clamp(state.scale-.15,.45,3); await renderPage();
+  }
+};
+$("fitBtn").onclick=fitWidth;
+
+function pointFromEvent(e){
+  const r=canvas.getBoundingClientRect();
+  return {x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)};
+}
+$("viewer").onclick=e=>{
+  if(!state.pdf)return;
+  if(e.target.classList.contains("marker"))return;
+  const r=canvas.getBoundingClientRect();
+  if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
+  state.selectedPoint=pointFromEvent(e);openSheet();
+};
+$("newNoteBtn").onclick=()=>{
+  if(!state.fileType){alert("Abra um PDF ou PPTX primeiro.");return}
+  state.selectedPoint={x:.5,y:.5};openSheet();
+};
+
+function openSheet(){
+  // A matriz permanece na última selecionada.
+  // Critério e desconto são escolhidos novamente em cada apontamento.
+  state.selectedCriteria=[];
+  state.criterionDiscounts={};
+  state.standardizationDiscount=null;
+  renderMatrices();renderCriteria();renderDeductionBuilder();
+  $("sheetPosition").textContent=`Página ${state.page} • ${state.selectedMatrix}`;
+  $("commentText").value="";
+  clearCurrentAudio();
+  $("sheet").classList.remove("hidden");
+  $("sec-correct").classList.add("split-active");
+  setTimeout(()=>{ $("sheet").scrollIntoView({behavior:"smooth",block:"nearest"}); renderMarkers(); },60);
+}
+function closeSheet(){
+  stopRecordingIfNeeded();
+  $("sheet").classList.add("hidden");
+  $("sec-correct").classList.remove("split-active");
+  setTimeout(()=>renderMarkers(),20);
+}
+$("closeSheet").onclick=closeSheet;
+$("cancelNote").onclick=closeSheet;
+
+function recalcScores(){
+  state.scores=Object.fromEntries(CRITERIA.map(c=>[c.id,c.max]));
+  for(const n of state.notes){
+    for(const d of (n.deductions||[])){
+      if(d.criterion==="standardization") continue;
+      if(!(d.criterion in state.scores)) continue;
+      state.scores[d.criterion]=Math.max(0,+(state.scores[d.criterion]-d.discount).toFixed(1));
+    }
+  }
+}
+async function saveNote(){
+  const isStandard=state.selectedMatrix==="Padronização";
+
+  if(isStandard && !Number.isFinite(state.standardizationDiscount)){
+    alert("Selecione o desconto de Padronização: 0,1, 0,2 ou 0,3.");
+    return;
+  }
+
+  if(!isStandard && !state.selectedCriteria.length){
+    alert("Selecione pelo menos um critério.");
+    return;
+  }
+
+  let audioDataURL=null;
+  if(state.currentAudio)audioDataURL=await blobToDataURL(state.currentAudio);
+
+  const deductions = isStandard
+    ? [{criterion:"standardization", criterionName:"Padronização", discount:+state.standardizationDiscount.toFixed(1)}]
+    : state.selectedCriteria.map(id=>{
+        const c=getCriterion(id);
+        const d=Number(state.criterionDiscounts[id]??0.1);
+        return {criterion:id,criterionName:c.full,discount:+d.toFixed(1)};
+      });
+
+  state.notes.push({
+    id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),
+    page:state.page,x:+state.selectedPoint.x.toFixed(5),y:+state.selectedPoint.y.toFixed(5),
+    matrix:state.selectedMatrix,
+    deductions,
+    text:$("commentText").value.trim(),
+    audio:audioDataURL,createdAt:new Date().toISOString()
+  });
+
+  recalcScores();closeSheet();renderAll();
+}
+$("saveNote").onclick=saveNote;
+
+function renderMarkers(){
+  const layer=$("markerLayer");
+  if(!state.fileType){layer.innerHTML="";return}
+  const cr=canvas.getBoundingClientRect(),vr=$("viewer").getBoundingClientRect();
+  const ox=cr.left-vr.left+$("viewer").scrollLeft,oy=cr.top-vr.top+$("viewer").scrollTop;
+  layer.innerHTML=state.notes.map((n,i)=>({...n,num:i+1})).filter(n=>n.page===state.page)
+    .map(n=>`<button class="marker ${n.audio?"has-audio":""}" data-id="${n.id}" style="left:${ox+n.x*cr.width}px;top:${oy+n.y*cr.height}px">${n.num}</button>`).join("");
+  layer.querySelectorAll(".marker").forEach(m=>m.onclick=e=>{e.stopPropagation();openMarker(m.dataset.id)});
+}
+
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+function renderLog(){
+  const box=$("notesLog");
+  if(!state.notes.length){box.innerHTML=`<div class="viewer-empty" style="padding:16px">Ainda não há comentários.</div>`;return}
+  box.innerHTML=state.notes.map((n,i)=>`
+    <div class="log-item">
+      <button class="log-num" data-open="${n.id}">${i+1}</button>
+      <div class="log-main">
+        <strong>${escapeHtml(n.matrix)} • pág. ${n.page}</strong>
+        <p>${n.deductions?.length ? n.deductions.map(d=>`${escapeHtml(d.criterionName)} −${fmt(d.discount)}`).join(" • ") : "Apontamento de padronização"}${n.text?` • ${escapeHtml(n.text)}`:""}${n.audio?" • 🎙️ com áudio":""}</p>
+        ${n.audio?`<audio class="mini-audio" src="${n.audio}" controls></audio>`:""}
+      </div>
+      <div class="log-side"><div class="loss">${n.deductions?.length?`−${fmt(n.deductions.reduce((s,d)=>s+d.discount,0))}`:"🎙️"}</div><button class="delete" data-del="${n.id}">✕</button></div>
+    </div>`).join("");
+  box.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openMarker(b.dataset.open));
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    state.notes=state.notes.filter(n=>n.id!==b.dataset.del);recalcScores();renderAll();
+  });
+}
+
+function openMarker(id){
+  const n=state.notes.find(x=>x.id===id);if(!n)return;
+  const total=(n.deductions||[]).reduce((s,d)=>s+d.discount,0);
+  $("modalMeta").textContent=`${n.matrix} • Página ${n.page}${total?` • −${fmt(total)}`:""}`;
+  $("modalTitle").textContent=(n.deductions&&n.deductions.length)
+    ? n.deductions.map(d=>`${d.criterionName} (−${fmt(d.discount)})`).join(" • ")
+    : "Padronização";
+  $("modalText").textContent=n.text||((n.audio)?"Ouça o comentário em áudio.":"Sem observação escrita.");
+  if(n.audio){$("modalAudio").src=n.audio;$("modalAudio").style.display="block"}
+  else{$("modalAudio").removeAttribute("src");$("modalAudio").style.display="none"}
+  $("markerModal").classList.remove("hidden");
+}
+$("closeMarkerModal").onclick=()=>$("markerModal").classList.add("hidden");
+$("markerModal").onclick=e=>{if(e.target===$("markerModal"))$("markerModal").classList.add("hidden")};
+
+function matrixData(matrix){
+  const notes=state.notes.filter(n=>n.matrix===matrix);
+  const loss=+notes.reduce((s,n)=>s+(n.deductions||[]).reduce((a,d)=>a+d.discount,0),0).toFixed(1);
+  if(matrix==="Padronização"){
+    return {
+      matrix,notes,loss,
+      criteria: notes.length ? [{
+        criterion:{id:"standardization",full:"Padronização"},
+        hits:notes.map(n=>({note:n,deduction:(n.deductions||[])[0]})),
+        loss
+      }] : []
+    };
+  }
+  const criteria=CRITERIA.map(c=>{
+    const hits=[];
+    notes.forEach(n=>{
+      (n.deductions||[]).filter(d=>d.criterion===c.id).forEach(d=>hits.push({note:n,deduction:d}));
+    });
+    return {
+      criterion:c,
+      hits,
+      loss:+hits.reduce((s,h)=>s+h.deduction.discount,0).toFixed(1)
+    };
+  }).filter(x=>x.hits.length);
+  return {matrix,notes,loss,criteria};
+}
+function matrixSummaryHTML(interactiveAudio=true){
+  const data=MATRICES.map(matrixData);
+  const scored=data.filter(x=>x.matrix!=="Padronização");
+  const maxLoss=Math.max(.5,...scored.map(x=>x.loss));
+  return data.map(x=>{
+    if(x.matrix==="Padronização"){
+      return `<details class="matrix-card" ${x.notes.length?"open":""}>
+        <summary>
+          <div><div class="matrix-name">Padronização</div><div style="font-size:8px;color:var(--muted);margin-top:4px">padronização do registro</div></div>
+          <div class="matrix-loss">${x.loss?`−${fmt(x.loss)}`:"0,0"}</div>
+        </summary>
+        <div class="matrix-body">
+          ${x.notes.length?x.notes.map((n,i)=>{
+            const d=(n.deductions||[])[0];
+            return `<div class="audio-item">
+              <div class="meta">Apontamento ${i+1} • página ${n.page}${d?` • −${fmt(d.discount)}`:""}</div>
+              ${n.text?`<p>${escapeHtml(n.text)}</p>`:""}
+              ${n.audio&&interactiveAudio?`<audio src="${n.audio}" controls></audio>`:(n.audio?`<p>🎙️ Comentário em áudio</p>`:"")}
+            </div>`;
+          }).join(""):`<div class="audio-item"><div class="meta">Nenhum apontamento de padronização.</div></div>`}
+        </div>
+      </details>`;
+    }
+    return `<details class="matrix-card" ${x.loss>0?"open":""}>
+      <summary>
+        <div>
+          <div class="matrix-name">${x.matrix}</div>
+          <div class="matrix-bar"><i style="width:${Math.min(100,(x.loss/maxLoss)*100)}%"></i></div>
+        </div>
+        <div class="matrix-loss">${x.loss?`−${fmt(x.loss)}`:"0,0"}</div>
+      </summary>
+      <div class="matrix-body">
+        ${x.criteria.length?x.criteria.map(c=>`
+          <div class="crit-row">
+            <div class="crit-head"><strong>${escapeHtml(c.criterion.full)}</strong><span class="crit-loss">−${fmt(c.loss)}</span></div>
+            <div class="audio-list">
+              ${c.hits.map((h,i)=>`
+                <div class="audio-item">
+                  <div class="meta">Apontamento ${i+1} • página ${h.note.page} • −${fmt(h.deduction.discount)}</div>
+                  ${h.note.text?`<p>${escapeHtml(h.note.text)}</p>`:""}
+                  ${h.note.audio&&interactiveAudio?`<audio src="${h.note.audio}" controls></audio>`:(h.note.audio?`<p>🎙️ Comentário em áudio</p>`:"")}
+                </div>`).join("")}
+            </div>
+          </div>`).join(""):`<div class="audio-item"><div class="meta">Nenhuma perda registrada nesta matriz.</div></div>`}
+      </div>
+    </details>`;
+  }).join("");
+}
+function renderSummary(){
+  if($("scoreNow")) $("scoreNow").innerHTML=`${fmt(baseScore())} <span>/ 10,0</span>`;
+  if($("notesCount")) $("notesCount").textContent=state.notes.length;
+  $("summaryScore").textContent=`${fmt(baseScore())} / 10,0`;
+  $("summaryComments").textContent=state.notes.length;
+  $("summaryAudio").textContent=state.notes.filter(n=>n.audio).length;
+  $("summaryLoss").textContent=fmt(totalLoss());
+  $("finishScore").textContent=fmt(baseScore());
+  $("finishNotes").textContent=state.notes.length;
+  $("finishCoordinator").textContent=state.coordinator||"—";
+  $("matrixSummary").innerHTML=matrixSummaryHTML(true);
+}
+function renderAll(){renderMarkers();renderLog();renderSummary()}
+
+/* Áudio: máximo 60 segundos */
+let recordTimerStart=0;
+async function ensureMicStream(){
+  if(state.micStream) return state.micStream;
+  state.micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  return state.micStream;
+}
+
+async function startRecording(){
+  if(!navigator.mediaDevices?.getUserMedia){alert("Este navegador não disponibilizou gravação de áudio.");return}
+  try{
+    const stream=await ensureMicStream();
+    state.chunks=[];
+    const mr=new MediaRecorder(stream);
+    state.mediaRecorder=mr;
+    mr.ondataavailable=e=>{if(e.data.size)state.chunks.push(e.data)};
+    mr.onstop=()=>{
+      const type=mr.mimeType||"audio/webm";
+      state.currentAudio=new Blob(state.chunks,{type});
+      if(state.currentAudioURL)URL.revokeObjectURL(state.currentAudioURL);
+      state.currentAudioURL=URL.createObjectURL(state.currentAudio);
+      $("audioPlayer").src=state.currentAudioURL;
+      $("audioPreview").classList.add("visible");
+      clearInterval(state.timerId);state.timerId=null;
+      $("recordBtn").classList.remove("recording");$("recordBtn").textContent="🎙️";
+    };
+    mr.start();recordTimerStart=Date.now();
+    $("recordBtn").classList.add("recording");$("recordBtn").textContent="■";
+    $("audioPreview").classList.add("visible");$("audioTime").textContent="00:00 / 01:00";
+    state.timerId=setInterval(()=>{
+      const sec=Math.floor((Date.now()-recordTimerStart)/1000);
+      $("audioTime").textContent=`${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")} / 01:00`;
+      if(sec>=60)stopRecordingIfNeeded();
+    },250);
+  }catch(err){alert("Não foi possível acessar o microfone. Verifique a permissão do navegador.")}
+}
+function stopRecordingIfNeeded(){if(state.mediaRecorder&&state.mediaRecorder.state==="recording")state.mediaRecorder.stop()}
+function clearCurrentAudio(){
+  stopRecordingIfNeeded();state.currentAudio=null;
+  if(state.currentAudioURL){URL.revokeObjectURL(state.currentAudioURL);state.currentAudioURL=null}
+  $("audioPlayer").removeAttribute("src");$("audioPreview").classList.remove("visible");$("audioTime").textContent="00:00 / 01:00";
+}
+$("recordBtn").onclick=()=>{if(state.mediaRecorder&&state.mediaRecorder.state==="recording")stopRecordingIfNeeded();else startRecording()};
+$("clearAudioBtn").onclick=clearCurrentAudio;
+window.addEventListener("beforeunload",()=>{if(state.micStream){state.micStream.getTracks().forEach(t=>t.stop())}});
+
+function go(target){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  $("sec-"+target).classList.add("active");
+  document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.target===target));
+  if(target==="summary"||target==="finish")renderSummary();
+}
+document.querySelectorAll(".nav").forEach(n=>n.onclick=()=>go(n.dataset.target));
+$("resumeBtn").onclick=()=>go("summary");
+$("finishBtn").onclick=()=>go("finish");
+
+function getProjectData(){
+  return {
+    app:"OVT Correção Interativa",version:"2.0",
+    coordinator:state.coordinator,filename:state.filename,fileType:state.fileType,score:baseScore(),
+    matrices:MATRICES.map(matrixData),
+    criteria:CRITERIA.map(c=>({id:c.id,name:c.full,max:c.max,current:state.scores[c.id],loss:+(c.max-state.scores[c.id]).toFixed(1)})),
+    notes:state.notes,savedAt:new Date().toISOString()
+  };
+}
+$("exportBackup").onclick=()=>{
+  const blob=new Blob([JSON.stringify(getProjectData(),null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=(state.filename||"registro").replace(/\.(pdf|pptx)$/i,"")+"_backup_correcao.json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+};
+
+function downloadText(filename,text){
+  const blob=new Blob([text],{type:"text/html;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+$("generateViewer").onclick=async()=>{
+  if(!state.originalFile){alert("Abra um PDF ou PPTX antes de finalizar.");return}
+  try{
+    setDocStatus("Preparando arquivo final…");
+    if(!state.fileBase64){
+      state.fileBase64=await withTimeout(fileToBase64(state.originalFile),60000,"Preparação do arquivo final");
+    }
+    setDocStatus("");
+  }catch(err){
+    setDocStatus("Não foi possível preparar o arquivo final: "+((err&&err.message)||err),true);
+    return;
+  }
+  const payload={
+    coordinator:state.coordinator,
+    filename:state.filename,
+    fileType:state.fileType,
+    fileBase64:state.fileBase64,
+    score:baseScore(),
+    notes:state.notes,
+    matrices:MATRICES,
+    criteria:CRITERIA.map(c=>({id:c.id,label:c.label,full:c.full,max:c.max,current:state.scores[c.id],loss:+(c.max-state.scores[c.id]).toFixed(1)}))
+  };
+  const data=JSON.stringify(payload).replace(/</g,"\\u003c");
+  const viewer=`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#02060d">
+<title>OVT • Correção do Registro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/pptxviewjs@1.1.9/dist/PptxViewJS.min.js"><\/script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#02060d;color:#f5f8fc;font-family:Arial,sans-serif}
+.app{max-width:760px;margin:auto;padding:10px 10px 40px}
+header{padding:14px;border:1px solid rgba(20,157,255,.3);border-radius:16px;background:#081624;margin-bottom:10px}
+h1{margin:0;font-size:20px}.meta{color:#91a5ba;font-size:11px;margin-top:4px}
+.card{border:1px solid rgba(20,157,255,.3);border-radius:16px;background:#071320;margin-bottom:10px;overflow:hidden}
+.hd{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.07);font-weight:800}.bd{padding:9px}
+.viewer{position:relative;background:#000;min-height:320px;display:flex;align-items:center;justify-content:center;overflow:auto;border-radius:10px}
+canvas{max-width:100%;height:auto;background:white}.markers{position:absolute;inset:0;pointer-events:none}
+.m{position:absolute;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;border:2px solid #119cff;background:#06111e;color:white;display:grid;place-items:center;font-weight:900;pointer-events:auto;box-shadow:0 0 0 4px rgba(17,156,255,.15),0 0 18px rgba(17,156,255,.8)}
+.m.audio:after{content:"♪";position:absolute;right:-5px;bottom:-5px;width:16px;height:16px;border-radius:50%;background:#ffc21b;color:#111;font-size:9px;display:grid;place-items:center}
+.controls{display:flex;justify-content:center;gap:7px;margin-top:8px}.btn{border:1px solid rgba(17,156,255,.35);background:#081827;color:white;border-radius:10px;padding:8px 12px;font-weight:700}
+.summary{display:grid;gap:8px}.matrix{border:1px solid rgba(17,156,255,.22);border-radius:13px;overflow:hidden;background:rgba(255,255,255,.02)}
+.matrix summary{list-style:none;padding:11px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center}.matrix summary::-webkit-details-marker{display:none}
+.mn{font-size:16px;font-weight:900}.ml{font-size:18px;font-weight:900;color:#ffc21b}.mb{padding:0 9px 9px;display:grid;gap:7px}
+.crit{border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px;background:rgba(0,0,0,.13)}
+.ch{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:800}.cl{color:#ffc21b}
+.ai{margin-top:6px;padding:7px;border-radius:8px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05)}
+.ai .am{font-size:9px;color:#91a5ba;margin-bottom:4px}.ai p{margin:0 0 5px;font-size:10px;line-height:1.4;color:#d5e0eb}.ai audio{width:100%;height:32px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:end;justify-content:center;padding:10px;z-index:20}.modal.open{display:flex}
+.note{width:min(560px,100%);background:#081624;border:1px solid rgba(17,156,255,.45);border-radius:17px;padding:13px}.tag{color:#ffc21b;font-weight:800;font-size:11px}.note h3{margin:4px 0 6px}.note p{color:#d1dce6;font-size:12px;line-height:1.5}.note audio{width:100%;margin-top:9px}
+
+.summary-slide{display:none;width:100%;min-height:560px;padding:18px 14px;background:linear-gradient(180deg,#071523,#02070d);color:#fff}
+.summary-slide.show{display:block}.summary-slide h2{margin:0;font-size:24px}.summary-slide .sub{color:#91a5ba;font-size:10px;margin:4px 0 14px}
+.graph{display:grid;gap:10px}.gr{display:grid;grid-template-columns:90px 1fr 46px;gap:8px;align-items:center}.gn{font-size:11px;font-weight:800}
+.gt{height:16px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}.gf{height:100%;border-radius:999px;background:linear-gradient(90deg,#ffc21b,#ff7a00)}
+.gv{text-align:right;font-size:16px;font-weight:900;color:#ffc21b}.std{margin-top:14px;padding:10px;border:1px solid rgba(255,194,27,.18);border-radius:11px;background:rgba(255,194,27,.035)}
+
+
+.viewer.split{min-height:0;align-items:flex-start;max-height:46vh}
+.viewer.split canvas{max-height:46vh;width:auto;max-width:100%;object-fit:contain}
+.detail-panel{display:none;margin-top:9px;border:1px solid rgba(17,156,255,.32);border-radius:13px;background:#071320;padding:11px}
+.detail-panel.open{display:block}
+.detail-panel .tag{color:#ffc21b;font-weight:800;font-size:10px}
+.detail-panel h3{margin:5px 0 6px;font-size:16px}
+.detail-panel p{color:#d1dce6;font-size:11px;line-height:1.45;margin:0}
+.detail-panel audio{width:100%;margin-top:8px}
+.detail-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.summary-detail{display:none;margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
+.summary-detail.open{display:block}
+.summary-detail h3{margin:0 0 6px;font-size:16px}
+.summary-detail .item{padding:8px;border-radius:9px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);margin-top:6px}
+.summary-detail audio{width:100%;height:32px;margin-top:5px}
+.clickable-crit{cursor:pointer}
+</style></head>
+<body><div class="app">
+<header><h1>OVT • Correção do Registro</h1><div class="meta" id="meta"></div></header>
+<div class="card"><div class="hd">Registro corrigido</div><div class="bd">
+<div class="viewer" id="viewer"><canvas id="c"></canvas><div class="markers" id="markers"></div><div class="summary-slide" id="finalSlide"></div></div>
+<div class="controls"><button class="btn" id="prev">‹</button><span class="btn" id="page">0 / 0</span><button class="btn" id="next">›</button></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="tag" id="tag"></div>
+  <h3 id="nt"></h3>
+  <p id="np"></p>
+  <audio id="na" controls></audio>
+  <div class="detail-actions"><button class="btn" id="closeDetail">Fechar apontamento</button></div>
+</div>
+</div></div>
+<div class="card" id="resultCard" style="display:none"><div class="hd">Detalhamento dos apontamentos</div><div class="bd"><div class="summary" id="summary"></div><div class="summary-detail" id="summaryDetail"></div></div></div>
+</div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const DATA=${data},$=id=>document.getElementById(id),fmt=n=>Number(n).toFixed(1).replace(".",",");
+$("meta").textContent=(DATA.filename||"Registro")+" • Coordenador: "+DATA.coordinator;
+let pdf=null,pptxViewer=null,page=1,pages=0;
+const canvas=$("c"),ctx=canvas.getContext("2d");
+
+function b64(){
+  const s=atob(DATA.fileBase64),a=new Uint8Array(s.length);
+  for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);
+  return a;
+}
+function noteTotal(n){return (n.deductions||[]).reduce((s,d)=>s+d.discount,0)}
+function matrixLoss(matrix){return DATA.notes.filter(n=>n.matrix===matrix).reduce((s,n)=>s+noteTotal(n),0)}
+
+async function loadDeck(){
+  if(DATA.fileType==="pptx"){
+    if(!window.PptxViewJS?.PPTXViewer) throw new Error("PptxViewJS indisponível");
+    pptxViewer=new window.PptxViewJS.PPTXViewer({canvas});
+    const bytes=b64();
+    const blob=new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+    const file=new File([blob],DATA.filename||"registro.pptx",{type:blob.type});
+    await pptxViewer.loadFile(file);
+    pages=Number(pptxViewer.getSlideCount?.()||0);
+    if(!pages) throw new Error("Nenhum slide foi identificado no PPTX.");
+    try{
+      await pptxViewer.goToSlide(0);
+    }catch(e){
+      await pptxViewer.render();
+    }
+  }else{
+    pdf=await pdfjsLib.getDocument({data:b64()}).promise;
+    pages=pdf.numPages;
+  }
+}
+
+function showFinalSlide(){
+  canvas.style.display="none";
+  $("markers").innerHTML="";
+  $("finalSlide").classList.add("show");
+  $("resultCard").style.display="block";
+
+  const mats=DATA.matrices;
+  const vals=mats.map(matrixLoss);
+  const max=Math.max(.5,...vals);
+  const std=DATA.notes.filter(n=>n.matrix==="Padronização");
+  const allDeductions=DATA.notes.flatMap(n=>(n.deductions||[]).map(d=>({note:n,d})));
+  const biggest=allDeductions.sort((a,b)=>b.d.discount-a.d.discount)[0];
+  const topLossName=biggest ? biggest.d.criterionName : "—";
+  const totalPointsLost=vals.reduce((a,b)=>a+b,0);
+
+  function criteriaForMatrix(matrix){
+    const notes=DATA.notes.filter(n=>n.matrix===matrix);
+    if(matrix==="Padronização"){
+      const hits=[];
+      notes.forEach(n=>(n.deductions||[]).filter(d=>d.criterion==="standardization").forEach(d=>hits.push({n,d})));
+      if(!hits.length) return "";
+      const loss=hits.reduce((s,h)=>s+h.d.discount,0);
+      return '<div class="criterion-final"><div class="criterion-line"><b>Padronização</b><span class="mloss">−'+fmt(loss)+'</span></div><div style="margin-top:6px"><button class="mic-btn" data-matrix="Padronização" data-criterion="__PAD__">'+(hits.some(h=>h.n.audio)?'🎙 áudio(s)':'▣ ver apontamentos')+'</button></div></div>';
+    }
+    const criteria=DATA.criteria.map(c=>{
+      const hits=[]; notes.forEach(n=>(n.deductions||[]).filter(d=>d.criterion===c.id).forEach(d=>hits.push({n,d})));
+      return {c,hits,loss:hits.reduce((s,h)=>s+h.d.discount,0)};
+    }).filter(x=>x.hits.length);
+    return criteria.map(x=>'<div class="criterion-final"><div class="criterion-line"><b>'+x.c.full+'</b><span class="mloss">−'+fmt(x.loss)+'</span></div><div style="margin-top:6px"><button class="mic-btn" data-matrix="'+matrix+'" data-criterion="'+x.c.id+'">'+(x.hits.some(h=>h.n.audio)?'🎙 áudio(s)':'▣ ver apontamentos')+'</button></div></div>').join('');
+  }
+
+  $("finalSlide").innerHTML =
+    '<h2>Resultado final</h2>'+
+    '<div class="sub">Visão executiva • perdas por matriz, critérios e apontamentos em áudio.</div>'+
+    '<div style="font-size:10px;color:#91a5ba;margin-top:7px">NOTA FINAL</div><div class="final-score">'+fmt(DATA.score)+' / 10,0</div>'+
+    '<div class="final-grid">'+
+      '<div><div class="graph">'+
+      mats.map((m,i)=>'<div class="gr"><div class="gn">'+m+'</div><div class="gt"><div class="gf" style="width:'+Math.min(100,(vals[i]/max)*100)+'%"></div></div><div class="gv">'+(vals[i]?'−'+fmt(vals[i]):'0,0')+'</div></div>').join('')+
+      '</div><div class="matrix-list" style="margin-top:14px">'+
+      mats.map(m=>'<div class="matrix-card-final"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h4>'+m+'</h4><div class="mloss">'+(matrixLoss(m)?'−'+fmt(matrixLoss(m)):'0,0')+'</div></div>'+criteriaForMatrix(m)+'</div>').join('')+
+      '</div></div>'+
+      '<div class="side-kpi">'+
+        '<div class="kpi-box"><div class="label">Maior perda</div><div class="big accent">'+mats[vals.indexOf(Math.max(...vals))]+'</div></div>'+
+        '<div class="kpi-box"><div class="label">Critério com maior impacto</div><div class="big">'+topLossName+'</div></div>'+
+        '<div class="kpi-box"><div class="label">Total de descontos</div><div class="big">'+fmt(totalPointsLost)+'</div></div>'+
+        '<div class="kpi-box"><div class="label">Padronização</div><div class="big">'+std.length+' apontamento(s)</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="summary-note">Toque em “áudio(s)” ou “ver apontamentos” para ver as referências. Depois use “Ver na página” para voltar diretamente ao slide original.</div>';
+
+  $("finalSlide").querySelectorAll(".mic-btn").forEach(btn=>{
+    btn.onclick=()=>showCriterionDetail(btn.dataset.matrix, btn.dataset.criterion);
+  });
+}
+
+async function render(){
+  const total=pages+1;
+  $("page").textContent=page+" / "+total;
+  if(page===total){showFinalSlide();return}
+  $("resultCard").style.display="none";
+  $("finalSlide").classList.remove("show");
+  $("summaryDetail").classList.remove("open");
+  canvas.style.display="block";
+
+  if(DATA.fileType==="pptx"){
+    await pptxViewer.goToSlide(page-1);
+    canvas.style.maxWidth="100%";
+    canvas.style.height="auto";
+    markers();
+    return;
+  }
+
+  const p=await pdf.getPage(page),raw=p.getViewport({scale:1}),scale=Math.min(2,($("viewer").clientWidth-4)/raw.width),vp=p.getViewport({scale});
+  canvas.width=vp.width;canvas.height=vp.height;
+  await p.render({canvasContext:ctx,viewport:vp}).promise;
+  markers();
+}
+
+function markers(){
+  const cr=canvas.getBoundingClientRect(),vr=$("viewer").getBoundingClientRect();
+  $("markers").innerHTML=DATA.notes.map((n,i)=>({...n,num:i+1})).filter(n=>n.page===page)
+    .map(n=>'<button class="m '+(n.audio?'audio':'')+'" data-id="'+n.id+'" style="left:'+(cr.left-vr.left+n.x*cr.width)+'px;top:'+(cr.top-vr.top+n.y*cr.height)+'px">'+n.num+'</button>').join("");
+  document.querySelectorAll(".m").forEach(m=>m.onclick=()=>openNote(m.dataset.id))
+}
+function openNote(id){
+  const n=DATA.notes.find(x=>x.id===id),total=noteTotal(n);
+  $("tag").textContent=n.matrix+" • Página "+n.page+(total?" • −"+fmt(total):"");
+  $("nt").textContent=(n.deductions&&n.deductions.length)?n.deductions.map(d=>d.criterionName+" (−"+fmt(d.discount)+")").join(" • "):"Padronização";
+  $("np").textContent=n.text||((n.audio)?"Ouça o comentário em áudio.":"Sem observação escrita.");
+  if(n.audio){$("na").src=n.audio;$("na").style.display="block"}else{$("na").removeAttribute("src");$("na").style.display="none"}
+  $("viewer").classList.add("split");
+  $("detailPanel").classList.add("open");
+  $("detailPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+$("closeDetail").onclick=()=>{
+  $("detailPanel").classList.remove("open");
+  $("viewer").classList.remove("split");
+  $("na").pause();
+};
+$("prev").onclick=()=>{if(page>1){$("detailPanel").classList.remove("open");$("viewer").classList.remove("split");page--;render()}};
+$("next").onclick=()=>{if(page<pdf.numPages+1){$("detailPanel").classList.remove("open");$("viewer").classList.remove("split");page++;render()}};
+
+function showCriterionDetail(matrix,crit){
+  const box=$("summaryDetail");
+  if(matrix==="Padronização"){
+    const notes=DATA.notes.filter(n=>n.matrix==="Padronização");
+    box.innerHTML='<h3>Padronização</h3><div style="color:#91a5ba;font-size:10px">Apontamentos qualitativos</div>'+
+      notes.map((n,i)=>'<div class="item"><b>Apontamento '+(i+1)+' • página '+n.page+((n.deductions||[])[0]?' • −'+fmt((n.deductions||[])[0].discount):'')+'</b>'+
+      (n.text?'<div style="font-size:10px;color:#d1dce6;margin-top:4px">'+n.text.replace(/</g,"&lt;")+'</div>':'')+
+      (n.audio?'<audio src="'+n.audio+'" controls></audio>':'')+
+      '<div style="margin-top:6px"><button class="btn" data-go-page="'+n.page+'" data-note="'+n.id+'">Ver na página</button></div></div>').join("");
+  }else{
+    const c=DATA.criteria.find(x=>x.id===crit);
+    const hits=[];
+    DATA.notes.filter(n=>n.matrix===matrix).forEach(n=>{
+      (n.deductions||[]).filter(d=>d.criterion===crit).forEach(d=>hits.push({n,d}));
+    });
+    box.innerHTML='<h3>'+c.full+' • '+matrix+'</h3><div style="color:#91a5ba;font-size:10px">Páginas e apontamentos relacionados a este critério</div>'+
+      hits.map((h,i)=>'<div class="item"><b>Apontamento '+(i+1)+' • página '+h.n.page+' • −'+fmt(h.d.discount)+'</b>'+
+      (h.n.text?'<div style="font-size:10px;color:#d1dce6;margin-top:4px">'+h.n.text.replace(/</g,"&lt;")+'</div>':'')+
+      (h.n.audio?'<audio src="'+h.n.audio+'" controls></audio>':'')+
+      '<div style="margin-top:6px"><button class="btn" data-go-page="'+h.n.page+'" data-note="'+h.n.id+'">Ver na página</button></div></div>').join("");
+  }
+  box.classList.add("open");
+  box.scrollIntoView({behavior:"smooth",block:"nearest"});
+  box.querySelectorAll("[data-go-page]").forEach(b=>b.onclick=async()=>{
+    page=Number(b.dataset.goPage);
+    await render();
+    openNote(b.dataset.note);
+  });
+}
+
+function matrixHtml(matrix){
+  const notes=DATA.notes.filter(n=>n.matrix===matrix);
+  if(matrix==="Padronização"){
+    return '<details class="matrix" '+(notes.length?'open':'')+'><summary><span class="mn">Padronização</span><span class="ml">'+notes.length+' áudio(s)</span></summary><div class="mb">'+
+      (notes.length?notes.map((n,i)=>'<div class="ai"><div class="am">Apontamento '+(i+1)+' • página '+n.page+'</div>'+(n.text?'<p>'+n.text.replace(/</g,"&lt;")+'</p>':'')+(n.audio?'<audio src="'+n.audio+'" controls></audio>':'')+'</div>').join(""):'<div class="ai"><div class="am">Nenhum apontamento.</div></div>')+
+      '</div></details>';
+  }
+  const loss=notes.reduce((s,n)=>s+noteTotal(n),0);
+  const criteria=DATA.criteria.map(c=>{
+    const hits=[];notes.forEach(n=>(n.deductions||[]).filter(d=>d.criterion===c.id).forEach(d=>hits.push({n,d})));
+    return{c,hits,loss:hits.reduce((s,h)=>s+h.d.discount,0)}
+  }).filter(x=>x.hits.length);
+  return '<details class="matrix" '+(loss>0?'open':'')+'><summary><span class="mn">'+matrix+'</span><span class="ml">'+(loss?'−'+fmt(loss):'0,0')+'</span></summary><div class="mb">'+
+    (criteria.length?criteria.map(x=>'<div class="crit clickable-crit" data-matrix="'+matrix+'" data-criterion="'+x.c.id+'"><div class="ch"><span>'+x.c.full+'</span><span class="cl">−'+fmt(x.loss)+'</span></div>'+
+      x.hits.map((h,i)=>'<div class="ai"><div class="am">Apontamento '+(i+1)+' • página '+h.n.page+' • −'+fmt(h.d.discount)+'</div>'+(h.n.text?'<p>'+h.n.text.replace(/</g,"&lt;")+'</p>':'')+(h.n.audio?'<audio src="'+h.n.audio+'" controls></audio>':'')+'</div>').join("")+
+      '</div>').join(""):'<div class="ai"><div class="am">Nenhuma perda registrada nesta matriz.</div></div>')+
+    '</div></details>';
+}
+$("summary").innerHTML=DATA.matrices.map(matrixHtml).join("");
+document.querySelectorAll(".clickable-crit").forEach(el=>{
+  el.addEventListener("click",e=>{
+    if(e.target.closest("audio"))return;
+    showCriterionDetail(el.dataset.matrix, el.dataset.criterion);
+  });
+});
+(async()=>{try{await loadDeck();await render()}catch(e){console.error(e);alert("Não foi possível abrir o arquivo da correção.")}})();addEventListener("resize",()=>pages&&render());
+<\/script></body></html>`;
+  const safe=(state.filename||"Registro").replace(/\.(pdf|pptx)$/i,"").replace(/[^\wÀ-ÿ-]+/g,"_").replace(/_+/g,"_");
+  downloadText(safe+"_CORRIGIDO.html",viewer);
+};
+
+addEventListener("resize",()=>state.fileType&&renderMarkers());
+
+renderMatrices();
+renderCriteria();
+renderDeductionBuilder();
+renderAll();
+</script>
+</body>
+</html>
