@@ -30,8 +30,11 @@
           "name": "file",
           "accept": [
             "application/pdf",
+            "application/vnd.ms-powerpoint",
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/octet-stream",
             ".pdf",
+            ".ppt",
             ".pptx"
           ]
         }

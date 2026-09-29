@@ -1,4 +1,4 @@
-const CACHE="ovt-app-v32";
+const CACHE="ovt-app-v33";
 const APP_SHELL=["./","./index.html","./manifest.webmanifest","./ovt-192.png","./ovt-512.png"];
 
 function bytesToBase64(bytes){
@@ -38,9 +38,9 @@ self.addEventListener("fetch",event=>{
         const form=await event.request.formData();
         let file=form.get("file") || form.get("pdf");
 
-        if(!(file instanceof File) || !file.size){
+        if(!file || !file.size){
           for(const value of form.values()){
-            if(value instanceof File && value.size){
+            if(value && typeof value==="object" && typeof value.arrayBuffer==="function" && value.size){
               file=value;
               break;
             }
@@ -48,11 +48,16 @@ self.addEventListener("fetch",event=>{
         }
 
         if(!file || !file.size){
-          const fail=`<!doctype html><meta charset="utf-8">
-          <body style="background:#02060d;color:white;font-family:sans-serif;padding:30px">
+          const fail=`<!doctype html><html lang="pt-BR"><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+          <body style="margin:0;background:#02060d;color:white;font-family:Arial,sans-serif;padding:28px">
           <h2>OVT Correção</h2>
-          <p>O WhatsApp abriu o OVT, mas não entregou o arquivo.</p>
-          <p>Volte e tente compartilhar novamente.</p></body>`;
+          <p>O WhatsApp abriu o OVT, mas não enviou o arquivo junto.</p>
+          <p>Isso acontece em alguns aparelhos com arquivos do WhatsApp.</p>
+          <button onclick="location.href='./?shared=1&fallback=1&v=33'" style="border:0;border-radius:14px;padding:16px 18px;background:#ffb800;font-weight:800">
+            Abrir OVT e selecionar o arquivo
+          </button>
+          </body></html>`;
           return new Response(fail,{headers:{"Content-Type":"text/html;charset=UTF-8"}});
         }
 

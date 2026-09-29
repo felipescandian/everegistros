@@ -737,6 +737,15 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
     <div id="shareProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg,#119cff,#ffc21b);transition:width .22s ease"></div>
   </div>
 </div>
+<div id="shareFallback" style="display:none;margin-top:10px;gap:8px">
+  <button type="button" id="pickSharedFile" class="btn gold" style="width:100%;min-height:46px">
+    Selecionar o arquivo agora
+  </button>
+  <div style="font-size:9px;color:var(--muted);line-height:1.45">
+    Se o WhatsApp não entregar o arquivo diretamente, este botão abre o seletor do celular.
+    Normalmente o arquivo recém-recebido aparece em <b>Recentes</b>, sem precisar procurar pastas.
+  </div>
+</div>
   </div>
 </div>
 
@@ -746,7 +755,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v32 WhatsApp</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v33 WhatsApp</small>
       </div>
     </div>
     <div class="top-actions">
@@ -1195,7 +1204,9 @@ async function consumeSharedFileWithRetry(){
     setShareProgress(Math.min(70,5+i*3),"Aguardando arquivo do WhatsApp…");
     await new Promise(r=>setTimeout(r,300));
   }
-  failShareProgress("O arquivo não chegou ao OVT. Compartilhe novamente pelo WhatsApp.");
+  failShareProgress("O WhatsApp abriu o OVT, mas não enviou o arquivo. Você pode selecioná-lo agora.");
+  const fb=$("shareFallback");
+  if(fb) fb.style.display="grid";
   return false;
 }
 
@@ -1219,7 +1230,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=32").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=33").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1271,6 +1282,18 @@ async function startApp(){
     });
   }
 }
+
+const pickSharedBtn=$("pickSharedFile");
+if(pickSharedBtn){
+  pickSharedBtn.addEventListener("click",()=>{
+    const input=$("fileInput");
+    if(input){
+      input.accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream";
+      input.click();
+    }
+  });
+}
+
 $("startCorrection").addEventListener("click",e=>{
   e.preventDefault();
   startApp();
