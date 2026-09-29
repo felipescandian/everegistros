@@ -1,15 +1,55 @@
-# OVT Correção • conversor PPTX → PDF
+# OVT Correção Interativa
 
-## Como publicar
-1. Suba a pasta `converter/` no mesmo repositório do GitHub.
-2. No Render, crie um Web Service a partir do repositório.
-3. Use `converter` como Root Directory.
-4. Runtime: Docker.
-5. Após publicar, copie a URL pública do serviço.
-6. No `index.html`, troque:
-   `https://SEU-CONVERSOR.onrender.com`
-   pela URL real.
-7. Faça commit do `index.html`.
+Este repositório contém somente os arquivos necessários para o OVT funcionar no GitHub Pages e para o conversor PPTX → PDF funcionar no Render.
 
-Depois disso o coordenador pode:
-WhatsApp → compartilhar PPTX → OVT → conversão automática → correção.
+## Estrutura correta da raiz
+
+- index.html
+- sw.js
+- manifest.webmanifest
+- ovt-192.png
+- ovt-512.png
+- server.js
+- package.json
+- Dockerfile
+- render.yaml
+- README.md
+
+## O que NÃO precisa mais ficar no repositório
+
+Arquivos Android/APK como:
+- AndroidManifest.xml
+- MainActivity.java
+- activity_main.xml
+- android-apk.yml
+- build.gradle
+- gradle.properties
+- file_paths.xml
+- strings.xml
+- styles.xml
+- ovt_icon.png
+
+## Endereços usados
+
+GitHub Pages:
+https://felipescandian.github.io/fsovtregistros/
+
+Conversor Render:
+https://ovt-converter.onrender.com
+
+## Fluxo
+
+PDF:
+WhatsApp/arquivo → OVT → abre direto.
+
+PPTX:
+WhatsApp/arquivo → OVT → Render converte para PDF → OVT abre para correção.
+
+A devolutiva final mantém:
+- PDF
+- marcadores
+- comentários
+- áudios
+- descontos
+- nota final
+- página de resultado

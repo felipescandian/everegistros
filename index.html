@@ -740,7 +740,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v27 Android</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v28 WhatsApp</small>
       </div>
     </div>
     <div class="top-actions">
@@ -1082,23 +1082,57 @@ $("installAppBtn")?.addEventListener("click",async()=>{
 async function consumeSharedFile(){
   if(!("caches" in window))return false;
   try{
-    const cache=await caches.open("ovt-share-v2");
-    const key=new URL("./__shared_file__",location.href).href;
-    const res=await cache.match(key);
+    const cache=await caches.open("ovt-share-v28");
+
+    // First try the canonical key.
+    const canonical=new URL("./__shared_file__",location.href).href;
+    let req=new Request(canonical);
+    let res=await cache.match(req);
+
+    // If the browser normalized the request differently, scan the cache.
+    if(!res){
+      const keys=await cache.keys();
+      const match=keys.find(k=>k.url.includes("__shared_file__"));
+      if(match){
+        req=match;
+        res=await cache.match(match);
+      }
+    }
+
     if(!res)return false;
+
     const blob=await res.blob();
-    const encoded=res.headers.get("X-OVT-Filename")||"registro.pdf";
-    let name="registro.pdf";
+    if(!blob || !blob.size) return false;
+
+    const encoded=res.headers.get("X-OVT-Filename")||"registro";
+    let name="registro";
     try{name=decodeURIComponent(encoded)}catch(e){name=encoded}
+
     const type=res.headers.get("Content-Type")||blob.type||"application/octet-stream";
     const file=new File([blob],name,{type});
-    await cache.delete(key);
+
+    // Delete only after we successfully built the File.
+    await cache.delete(req);
+
+    $("sharedFileHint").style.display="block";
+    $("sharedFileHint").textContent=`Arquivo recebido: ${name}. Preparando…`;
+
     await loadDocument(file);
+
+    $("sharedFileHint").textContent=`✓ ${name} carregado. Informe seu nome e entre para corrigir.`;
     return true;
   }catch(err){
     console.error("Falha ao consumir arquivo compartilhado",err);
     return false;
   }
+}
+
+async function consumeSharedFileWithRetry(){
+  for(let i=0;i<24;i++){
+    if(await consumeSharedFile()) return true;
+    await new Promise(r=>setTimeout(r,250));
+  }
+  return false;
 }
 
 async function receiveLaunchedFiles(launchParams){
@@ -1119,12 +1153,18 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=27").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=28").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
   if(new URLSearchParams(location.search).get("shared")==="1"){
     $("sharedFileHint").style.display="block";
+    $("sharedFileHint").textContent="Arquivo recebido do WhatsApp. Carregando…";
+
+    const ok=await consumeSharedFileWithRetry();
+    if(!ok){
+      $("sharedFileHint").textContent="Não consegui recuperar o arquivo recebido. Tente compartilhar novamente para o OVT.";
+    }
   }
 });
 
@@ -1143,8 +1183,20 @@ async function startApp(){
   // Entra no app IMEDIATAMENTE.
   // O microfone não pode bloquear a abertura, principalmente em arquivo local (file://)
   // e em navegadores móveis. A permissão será pedida em segundo plano ou ao tocar em gravar.
+  const cameFromShare=new URLSearchParams(location.search).get("shared")==="1";
+
+  if(cameFromShare && !state.pdf){
+    $("sharedFileHint").style.display="block";
+    $("sharedFileHint").textContent="Finalizando abertura do arquivo…";
+    const ok=await consumeSharedFileWithRetry();
+    if(!ok){
+      $("sharedFileHint").textContent="Não consegui recuperar o arquivo. Compartilhe novamente pelo WhatsApp.";
+      alert("O OVT abriu, mas o arquivo do WhatsApp não chegou corretamente. Compartilhe o arquivo novamente para o OVT.");
+      return;
+    }
+  }
+
   $("startOverlay").style.display="none";
-  await consumeSharedFile();
 
   // Pré-aquece o microfone sem travar a entrada no app.
   if(location.protocol!=="file:" && navigator.mediaDevices?.getUserMedia){
