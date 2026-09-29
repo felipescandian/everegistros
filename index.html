@@ -507,7 +507,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
 }
 .audio-preview.visible{display:flex !important}
 .audio-preview .timer{
-  min-width:72px;
+  min-width:52px;
   font-size:9px;
   color:#ffc21b;
   font-weight:900;
@@ -714,6 +714,169 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
   width:30px;height:30px;border-radius:9px;
 }
 
+
+/* ===== v35 • leitura e correção em celular ===== */
+
+/* Não há mais microfone flutuando sobre o registro. */
+.quick-orb{display:none !important}
+
+/* Microfone do painel menor e menos intrusivo. */
+.compact-mic{
+  width:34px !important;
+  height:34px !important;
+  min-width:34px !important;
+  min-height:34px !important;
+  font-size:16px !important;
+  border-radius:10px !important;
+  padding:0 !important;
+}
+
+/* O zoom agora aumenta o documento de verdade; o viewer rola, sem reencolher o canvas. */
+#pdfCanvas{
+  max-width:none !important;
+  width:auto;
+  height:auto;
+  flex:none;
+}
+.viewer{
+  justify-content:flex-start;
+  align-items:flex-start;
+  overscroll-behavior:contain;
+}
+
+/* Retrato: painel ocupa metade inferior para manter a página visível. */
+@media (orientation:portrait) and (max-width:700px){
+  #sec-correct.split-active .viewer{
+    height:43dvh;
+    max-height:43dvh !important;
+  }
+  #sheet.bottom-sheet:not(.hidden){
+    left:6px;
+    right:6px;
+    bottom:6px;
+    top:auto;
+    width:auto;
+    max-height:49dvh;
+  }
+  .audio-preview{
+    width:min(260px,calc(100vw - 20px)) !important;
+    padding:6px 7px !important;
+  }
+}
+
+/* Paisagem: correção 50/50 real, aproveitando toda a tela. */
+@media (orientation:landscape) and (max-height:700px){
+  #sec-correct.split-active{
+    position:fixed;
+    inset:0;
+    z-index:8500;
+    display:grid !important;
+    grid-template-columns:50vw 50vw;
+    grid-template-rows:100dvh;
+    width:100vw;
+    height:100dvh;
+    padding:0;
+    margin:0;
+    background:#02060d;
+    overflow:hidden;
+  }
+
+  #sec-correct.split-active > .card{
+    grid-column:1;
+    height:100dvh;
+    min-height:0;
+    border-radius:0;
+    border-left:0;
+    border-top:0;
+    border-bottom:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  #sec-correct.split-active .card-head{
+    padding:6px 8px;
+  }
+  #sec-correct.split-active .card-head small,
+  #sec-correct.split-active .quick-note,
+  #sec-correct.split-active .split-caption,
+  #sec-correct.split-active .doc-status{
+    display:none !important;
+  }
+  #sec-correct.split-active .filebar{
+    padding:5px 8px;
+  }
+
+  #sec-correct.split-active .viewer-wrap{
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    padding:4px;
+    overflow:hidden;
+  }
+  #sec-correct.split-active .viewer{
+    flex:1;
+    min-height:0 !important;
+    height:auto !important;
+    max-height:none !important;
+    border-radius:8px;
+    overflow:auto;
+  }
+  #sec-correct.split-active .viewer-controls{
+    padding:4px 0 0;
+  }
+
+  #sec-correct.split-active #sheet.bottom-sheet{
+    display:block;
+    grid-column:2;
+    position:relative !important;
+    inset:auto !important;
+    width:50vw !important;
+    height:100dvh;
+    max-height:100dvh !important;
+    margin:0;
+    border-radius:0;
+    border-top:0;
+    border-right:0;
+    border-bottom:0;
+    overflow:auto;
+    padding-bottom:10px;
+  }
+
+  #sec-correct.split-active #sheet .sheet-top{
+    padding-top:8px;
+  }
+
+  #sec-correct.split-active .matrix-tab{
+    min-height:31px;
+    padding:5px 4px;
+    font-size:7.5px;
+  }
+  #sec-correct.split-active .criterion{
+    padding:6px;
+  }
+  #sec-correct.split-active .comment-box textarea{
+    min-height:48px;
+  }
+  #sec-correct.split-active .step-title{
+    margin-top:6px;
+  }
+  #sec-correct.split-active .sheet-actions{
+    padding-top:5px;
+  }
+
+  .audio-preview{
+    right:8px !important;
+    bottom:8px !important;
+    width:calc(50vw - 16px) !important;
+    padding:5px 6px !important;
+  }
+  .audio-preview audio{
+    height:26px !important;
+  }
+}
+
 </style>
 </head>
 
@@ -755,7 +918,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v34 Mobile</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v35 Leitura</small>
       </div>
     </div>
     <div class="top-actions">
@@ -797,9 +960,6 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
           <canvas id="pdfCanvas" width="1280" height="720"></canvas>
           <img id="pptxSnapshot" alt="Slide do PowerPoint" style="display:none;max-width:100%;height:auto;background:#fff">
           <div id="markerLayer"></div>
-          <button type="button" class="quick-orb" id="quickOrb" title="Arraste até o ponto. Toque para gravar e corrigir">
-            🎙️<span class="orb-dot"></span>
-          </button>
         </div>
 
         <div class="viewer-controls">
@@ -817,7 +977,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
 
       <div class="quick-note">
         <div class="hint">
-          <b style="color:#fff">Fluxo rápido:</b> arraste o 🎙️ até o ponto → toque → grave → pontue → salve.
+          <b style="color:#fff">Fluxo rápido:</b> toque no ponto → escolha a matriz → grave se quiser → pontue → salve.
         </div>
         <button class="btn gold" id="newNoteBtn">+ Apontamento</button>
       </div>
@@ -868,7 +1028,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
   <div class="comment-box">
     <textarea id="commentText" placeholder="Digite ou grave o motivo da perda de ponto..."></textarea>
     <div class="rec-col">
-      <button class="rec-btn" id="recordBtn" title="Gravar áudio">🎙️</button>
+      <button class="rec-btn compact-mic" id="recordBtn" title="Gravar áudio">🎙️</button>
       <button class="rec-btn" id="clearAudioBtn" title="Apagar áudio">↺</button>
     </div>
   </div>
@@ -1233,7 +1393,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=34").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=35").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1694,17 +1854,19 @@ async function renderPage(){
   if(!state.pdf)return;
   const page=await state.pdf.getPage(state.page);
   const vp=page.getViewport({scale:state.scale});
-  canvas.width=vp.width;
-  canvas.height=vp.height;
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=Math.max(1,Math.floor(vp.width*dpr));
+  canvas.height=Math.max(1,Math.floor(vp.height*dpr));
   canvas.style.display="block";
-  canvas.style.width="";
-  canvas.style.maxWidth="100%";
-  canvas.style.height="auto";
+  canvas.style.width=Math.floor(vp.width)+"px";
+  canvas.style.height=Math.floor(vp.height)+"px";
   $("viewerEmpty").style.display="none";
-  await page.render({canvasContext:ctx,viewport:vp}).promise;
+  await page.render({
+    canvasContext:ctx,
+    viewport:vp,
+    transform:[dpr,0,0,dpr,0,0]
+  }).promise;
   $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
-  $("quickOrb")?.classList.add("show");
-  setTimeout(()=>window.__placeQuickOrb?.(state.selectedPoint),20);
   renderMarkers();
 }
 
@@ -1712,9 +1874,11 @@ async function fitWidth(){
   if(!state.pdf)return;
   const page=await state.pdf.getPage(state.page);
   const raw=page.getViewport({scale:1});
-  const maxW=$("viewer").clientWidth-4;
-  state.scale=clamp(maxW/raw.width,.45,3);
+  const maxW=Math.max(120,$("viewer").clientWidth-8);
+  state.scale=clamp(maxW/raw.width,.35,3);
   await renderPage();
+  $("viewer").scrollLeft=0;
+  $("viewer").scrollTop=0;
 }
 
 $("pdfInput").onchange=async e=>{
@@ -1750,10 +1914,16 @@ $("nextBtn").onclick=async()=>{
   if(state.pdf&&state.page<state.pages){state.page++;await renderPage()}
 };
 $("zoomIn").onclick=async()=>{
-  if(state.pdf){state.scale=clamp(state.scale+.15,.45,3);await renderPage()}
+  if(state.pdf){
+    state.scale=clamp(state.scale*1.18,.35,3.5);
+    await renderPage();
+  }
 };
 $("zoomOut").onclick=async()=>{
-  if(state.pdf){state.scale=clamp(state.scale-.15,.45,3);await renderPage()}
+  if(state.pdf){
+    state.scale=clamp(state.scale/1.18,.35,3.5);
+    await renderPage();
+  }
 };
 $("fitBtn").onclick=fitWidth;
 
@@ -1762,108 +1932,17 @@ function pointFromEvent(e){
   return {x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)};
 }
 
-/* Microfone/apontamento flutuante: arraste no documento e toque para abrir + gravar */
-(()=>{
-  const orb=$("quickOrb");
-  const viewer=$("viewer");
-  let dragging=false, moved=false, pointerId=null, startX=0,startY=0,origLeft=0,origTop=0;
-
-  function placeOrbFromPoint(p){
-    const surface=activeSurface();
-    const sr=surface.getBoundingClientRect();
-    const vr=viewer.getBoundingClientRect();
-    const x=(sr.left-vr.left)+p.x*sr.width;
-    const y=(sr.top-vr.top)+p.y*sr.height;
-    orb.style.left=(x-orb.offsetWidth/2)+"px";
-    orb.style.top=(y-orb.offsetHeight/2)+"px";
-  }
-
-  function syncPointFromOrb(){
-    const surface=activeSurface();
-    const sr=surface.getBoundingClientRect();
-    const or=orb.getBoundingClientRect();
-    const cx=or.left+or.width/2, cy=or.top+or.height/2;
-    state.selectedPoint={
-      x:clamp((cx-sr.left)/sr.width,0,1),
-      y:clamp((cy-sr.top)/sr.height,0,1)
-    };
-  }
-
-  orb.addEventListener("pointerdown",e=>{
-    if(!state.pdf)return;
-    e.preventDefault();e.stopPropagation();
-    pointerId=e.pointerId;
-    orb.setPointerCapture?.(pointerId);
-    dragging=true;moved=false;
-    startX=e.clientX;startY=e.clientY;
-    origLeft=parseFloat(orb.style.left)||orb.offsetLeft;
-    origTop=parseFloat(orb.style.top)||orb.offsetTop;
-    orb.classList.add("dragging");
-  });
-
-  orb.addEventListener("pointermove",e=>{
-    if(!dragging || e.pointerId!==pointerId)return;
-    e.preventDefault();e.stopPropagation();
-    const dx=e.clientX-startX,dy=e.clientY-startY;
-    if(Math.hypot(dx,dy)>5)moved=true;
-
-    const surface=activeSurface();
-    const sr=surface.getBoundingClientRect();
-    const vr=viewer.getBoundingClientRect();
-    const minL=sr.left-vr.left-orb.offsetWidth/2;
-    const maxL=sr.right-vr.left-orb.offsetWidth/2;
-    const minT=sr.top-vr.top-orb.offsetHeight/2;
-    const maxT=sr.bottom-vr.top-orb.offsetHeight/2;
-
-    orb.style.left=clamp(origLeft+dx,minL,maxL)+"px";
-    orb.style.top=clamp(origTop+dy,minT,maxT)+"px";
-    syncPointFromOrb();
-  });
-
-  async function finishPointer(e){
-    if(!dragging || (pointerId!==null && e.pointerId!==pointerId))return;
-    e.preventDefault();e.stopPropagation();
-    dragging=false;
-    orb.classList.remove("dragging");
-    try{orb.releasePointerCapture?.(pointerId)}catch(_){}
-    pointerId=null;
-    syncPointFromOrb();
-
-    if(!moved){
-      if(!$("sheet").classList.contains("hidden")){
-        if(state.mediaRecorder && state.mediaRecorder.state==="recording"){
-          await stopAndFinalizeRecording();
-        }else{
-          await startRecording();
-        }
-      }else{
-        await openSheet({autoRecord:true});
-      }
-    }
-  }
-
-  orb.addEventListener("pointerup",finishPointer);
-  orb.addEventListener("pointercancel",e=>{
-    dragging=false;moved=false;pointerId=null;orb.classList.remove("dragging");
-  });
-
-  window.addEventListener("resize",()=>{if(state.pdf)placeOrbFromPoint(state.selectedPoint)});
-  window.__placeQuickOrb=placeOrbFromPoint;
-})();
-
 $("viewer").onclick=e=>{
   if(!state.pdf)return;
-  if(e.target.classList.contains("marker") || e.target.closest?.("#quickOrb"))return;
+  if(e.target.classList.contains("marker"))return;
   const r=activeSurface().getBoundingClientRect();
   if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
   state.selectedPoint=pointFromEvent(e);
-  window.__placeQuickOrb?.(state.selectedPoint);
   openSheet();
 };
 $("newNoteBtn").onclick=()=>{
   if(!state.fileType){alert("Abra um PDF primeiro.");return}
   state.selectedPoint={x:.5,y:.5};
-  window.__placeQuickOrb?.(state.selectedPoint);
   openSheet();
 };
 
@@ -1877,7 +1956,15 @@ async function openSheet({autoRecord=false}={}){
   await clearCurrentAudio();
   $("sheet").classList.remove("hidden");
   $("sec-correct").classList.add("split-active");
-  setTimeout(()=>renderMarkers(),20);
+
+  setTimeout(async()=>{
+    if(state.pdf && window.matchMedia("(orientation: landscape) and (max-height: 700px)").matches){
+      await fitWidth();
+    }else{
+      renderMarkers();
+    }
+  },80);
+
   if(autoRecord){
     setTimeout(()=>startRecording(),120);
   }
@@ -1888,8 +1975,9 @@ async function closeSheet(){
   }
   $("sheet").classList.add("hidden");
   $("sec-correct").classList.remove("split-active");
-  $("quickOrb").classList.remove("recording");
-  setTimeout(()=>renderMarkers(),20);
+  setTimeout(async()=>{
+    if(state.pdf) await fitWidth();
+  },60);
 }
 $("closeSheet").onclick=closeSheet;
 $("cancelNote").onclick=closeSheet;
