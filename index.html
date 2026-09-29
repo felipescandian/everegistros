@@ -1009,6 +1009,254 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
   #sec-correct.split-active{grid-template-columns:58vw 42vw !important}
   #sec-correct.split-active #sheet.bottom-sheet{width:42vw !important}
 }
+
+/* ===== v39 • máximo dinamismo na correção ===== */
+
+/* Navegação inferior menor no uso normal */
+body{padding-bottom:56px !important}
+.bottomnav{
+  height:52px !important;
+  padding:4px 7px calc(4px + env(safe-area-inset-bottom)) !important;
+}
+.nav{font-size:7px !important}
+.nav b{font-size:14px !important;margin-bottom:0 !important}
+
+/* Marcadores menores para poluir menos a leitura */
+.marker{
+  width:25px !important;height:25px !important;
+  font-size:8px !important;
+  border-width:1.5px !important;
+  box-shadow:0 0 0 2px rgba(17,156,255,.12),0 0 10px rgba(17,156,255,.6) !important;
+}
+.marker.has-audio:after{
+  width:12px !important;height:12px !important;
+  right:-4px !important;bottom:-4px !important;
+  font-size:6px !important;border-width:1px !important;
+}
+
+/* Microfone no topo */
+.top-audio-row{
+  display:grid;
+  grid-template-columns:30px auto 1fr 28px;
+  align-items:center;
+  gap:5px;
+  padding:4px 5px;
+  margin:0 0 3px;
+  border:1px solid rgba(17,156,255,.20);
+  border-radius:9px;
+  background:rgba(17,156,255,.045);
+}
+.top-audio-label{
+  font-size:8px;font-weight:900;color:#dce8f4;
+}
+.top-audio-row .timer{
+  text-align:right;
+  font-size:9px !important;
+}
+.compact-clear{
+  width:28px !important;height:28px !important;
+  min-width:28px !important;min-height:28px !important;
+  border-radius:8px !important;
+  font-size:12px !important;
+  padding:0 !important;
+}
+.top-audio-preview{
+  margin:3px 0 4px !important;
+  padding:4px 5px !important;
+}
+.top-audio-preview audio{
+  height:27px !important;
+}
+
+/* Matriz e números menores */
+#sheet .matrix-tabs{
+  gap:3px !important;
+  margin-bottom:2px !important;
+}
+#sheet .matrix-btn,
+#sheet .matrix-tab{
+  min-height:23px !important;
+  padding:2px 3px !important;
+  font-size:6.2px !important;
+  line-height:1 !important;
+  border-radius:7px !important;
+}
+#sheet .standard-box{
+  padding:6px !important;
+  margin-top:4px !important;
+}
+#sheet .standard-box > div:first-child{
+  margin-bottom:3px !important;
+  font-size:8px !important;
+}
+#sheet .standard-box > div:nth-child(2){
+  display:none !important;
+}
+#sheet .discount,
+#sheet .discount-btn{
+  min-height:31px !important;
+  font-size:13px !important;
+  line-height:1 !important;
+  padding:3px 4px !important;
+  border-radius:8px !important;
+}
+#sheet .step-title .n{
+  width:17px !important;height:17px !important;
+  font-size:7px !important;
+}
+#sheet .step-title{
+  gap:4px !important;
+  font-size:7.5px !important;
+  margin:4px 0 3px !important;
+}
+#sheet .criterion{
+  min-height:32px !important;
+  padding:4px 4px !important;
+}
+#sheet .criterion span{
+  font-size:9px !important;
+  margin-bottom:1px !important;
+}
+#sheet .criterion-name{
+  font-size:7.7px !important;
+}
+#sheet textarea{
+  min-height:32px !important;
+  max-height:48px !important;
+  padding:5px 6px !important;
+  font-size:8px !important;
+}
+#sheet .sheet-actions{
+  position:sticky;
+  bottom:0;
+  z-index:8;
+  background:linear-gradient(180deg,rgba(3,10,19,.35),#030a13 24%);
+  padding-top:4px !important;
+  margin-top:5px !important;
+}
+#sheet .sheet-actions .btn{
+  min-height:30px !important;
+  font-size:7.5px !important;
+}
+
+/* CORREÇÃO EM PAISAGEM:
+   mais documento, painel menor, sem segundo card e sem barra inferior preta */
+@media (orientation:landscape) and (max-height:700px){
+  body:has(#sec-correct.split-active) .bottomnav{
+    display:none !important;
+  }
+  body:has(#sec-correct.split-active){
+    padding-bottom:0 !important;
+    overflow:hidden !important;
+  }
+
+  #sec-correct.split-active{
+    grid-template-columns:67vw 33vw !important;
+  }
+
+  /* CRÍTICO: só o card do documento participa do split.
+     O card "Apontamentos desta correção" era uma das fontes de espaço/área preta. */
+  #sec-correct.split-active > .card:not(:first-child){
+    display:none !important;
+  }
+  #sec-correct.split-active > .card:first-child{
+    width:67vw !important;
+    height:100dvh !important;
+  }
+
+  #sec-correct.split-active #sheet.bottom-sheet{
+    width:33vw !important;
+    height:100dvh !important;
+    padding:5px 6px 6px !important;
+  }
+
+  /* Cabeçalho do card some no split; fica só nome/página em faixa mínima */
+  #sec-correct.split-active > .card:first-child > .card-head{
+    display:none !important;
+  }
+  #sec-correct.split-active .filebar{
+    min-height:27px !important;
+    padding:3px 6px !important;
+    font-size:7px !important;
+  }
+  #sec-correct.split-active .pagepill{
+    font-size:8px !important;
+    padding:3px 6px !important;
+  }
+
+  #sec-correct.split-active .viewer-wrap{
+    position:relative !important;
+    flex:0 0 auto !important;
+    padding:0 !important;
+    overflow:visible !important;
+  }
+  #sec-correct.split-active .viewer{
+    width:100% !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:calc(100dvh - 30px) !important;
+    aspect-ratio:16/9;
+    border-radius:0 !important;
+    overflow:auto !important;
+    background:#02060d !important;
+  }
+
+  /* controles ficam sobre a imagem, não criam faixa preta */
+  #sec-correct.split-active .viewer-controls{
+    position:absolute !important;
+    right:6px !important;
+    bottom:6px !important;
+    z-index:12 !important;
+    padding:3px !important;
+    margin:0 !important;
+    gap:3px !important;
+    border-radius:9px !important;
+    background:rgba(2,8,16,.82) !important;
+    backdrop-filter:blur(7px);
+    transform:none !important;
+  }
+  #sec-correct.split-active .viewer-controls .btn{
+    min-height:25px !important;
+    padding:3px 7px !important;
+    font-size:7.5px !important;
+  }
+
+  #sec-correct.split-active #sheet .sheet-top{
+    margin-bottom:3px !important;
+    padding:2px 0 3px !important;
+  }
+  #sec-correct.split-active #sheet .sheet-top strong{
+    font-size:14px !important;
+  }
+  #sec-correct.split-active #sheet .sheet-top small{
+    font-size:6.8px !important;
+  }
+  #sec-correct.split-active #sheet .sheet-close{
+    width:27px !important;height:27px !important;
+    font-size:12px !important;
+  }
+  #sec-correct.split-active .matrix-help{
+    display:none !important;
+  }
+  #sec-correct.split-active .top-audio-row{
+    margin-bottom:2px !important;
+    padding:3px 4px !important;
+  }
+}
+
+/* Em retrato também reduzimos o painel */
+@media (orientation:portrait) and (max-width:700px){
+  #sheet .matrix-btn,
+  #sheet .matrix-tab{
+    min-height:27px !important;
+    font-size:7px !important;
+  }
+  #sheet .discount,
+  #sheet .discount-btn{
+    min-height:34px !important;
+    font-size:14px !important;
+  }
+}
 </style>
 </head>
 
@@ -1050,7 +1298,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v38 Trainer 4K</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v39 Dinâmico</small>
       </div>
     </div>
     <div class="top-actions">
@@ -1128,9 +1376,20 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
     <button class="sheet-close" id="closeSheet">✕</button>
   </div>
 
+  <div class="top-audio-row">
+    <button class="rec-btn compact-mic" id="recordBtn" title="Gravar áudio">🎙️</button>
+    <span class="top-audio-label">Áudio</span>
+    <span class="timer" id="audioTime">00:00</span>
+    <button class="rec-btn compact-clear" id="clearAudioBtn" title="Apagar áudio">↺</button>
+  </div>
+
+  <div class="audio-preview top-audio-preview" id="audioPreview">
+    <audio id="audioPlayer" controls></audio>
+  </div>
+
   <div class="step-title"><span class="n">1</span> Matriz</div>
   <div class="matrix-tabs" id="matrixTabs"></div>
-  <div style="margin-top:6px;color:var(--muted);font-size:8.5px;line-height:1.4">
+  <div class="matrix-help" style="margin-top:6px;color:var(--muted);font-size:8.5px;line-height:1.4">
     Padronização aceita desconto rápido de 0,1, 0,2 ou 0,3, além de comentário e áudio.
   </div>
 
@@ -1156,18 +1415,9 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
     </div>
   </div>
 
-  <div class="step-title"><span class="n">4</span> Observação / áudio</div>
-  <div class="comment-box">
-    <textarea id="commentText" placeholder="Digite ou grave o motivo da perda de ponto..."></textarea>
-    <div class="rec-col">
-      <button class="rec-btn compact-mic" id="recordBtn" title="Gravar áudio">🎙️</button>
-      <button class="rec-btn" id="clearAudioBtn" title="Apagar áudio">↺</button>
-    </div>
-  </div>
-
-  <div class="audio-preview" id="audioPreview">
-    <span class="timer" id="audioTime">00:00</span>
-    <audio id="audioPlayer" controls></audio>
+  <div class="step-title"><span class="n">4</span> Observação</div>
+  <div class="comment-box compact-comment">
+    <textarea id="commentText" placeholder="Comentário opcional..."></textarea>
   </div>
 
   <div class="sheet-actions">
@@ -1525,7 +1775,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=38").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=39").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -2101,7 +2351,7 @@ async function openSheet({autoRecord=false}={}){
     }else{
       renderMarkers();
     }
-  },80);
+  },120);
 
   if(autoRecord){
     setTimeout(()=>startRecording(),120);
@@ -2228,8 +2478,16 @@ function openMarker(id){
     ? n.deductions.map(d=>`${d.criterionName} (−${fmt(d.discount)})`).join(" • ")
     : "Padronização";
   $("modalText").textContent=n.text||((n.audio)?"Ouça o comentário em áudio.":"Sem observação escrita.");
-  if(n.audio){$("modalAudio").src=n.audio;$("modalAudio").style.display="block"}
-  else{$("modalAudio").removeAttribute("src");$("modalAudio").style.display="none"}
+  if(n.audio){
+    $("modalAudio").src=n.audio;
+    $("modalAudio").style.display="block";
+    $("modalAudio").load();
+    setTimeout(()=>$("modalAudio").play().catch(()=>{}),40);
+  }else{
+    $("modalAudio").pause();
+    $("modalAudio").removeAttribute("src");
+    $("modalAudio").style.display="none";
+  }
   $("markerModal").classList.remove("hidden");
 }
 $("closeMarkerModal").onclick=()=>$("markerModal").classList.add("hidden");
@@ -3158,6 +3416,7 @@ function openNote(id){
     $("na").src=n.audio;
     $("na").style.display="block";
     $("na").load();
+    setTimeout(()=>$("na").play().catch(()=>{}),40);
   }else{
     $("na").pause();
     $("na").removeAttribute("src");

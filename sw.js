@@ -1,4 +1,4 @@
-const CACHE="ovt-app-v38";
+const CACHE="ovt-app-v39";
 const APP_SHELL=["./","./index.html","./manifest.webmanifest","./ovt-192.png","./ovt-512.png"];
 
 self.addEventListener("install",event=>{
@@ -40,21 +40,16 @@ self.addEventListener("fetch",event=>{
           <body style="margin:0;background:#02060d;color:white;font-family:Arial,sans-serif;padding:28px">
           <h2>OVT Correção</h2>
           <p>O WhatsApp abriu o OVT, mas não enviou o arquivo junto.</p>
-          <button onclick="location.href='./?shared=1&fallback=1&v=38'" style="border:0;border-radius:14px;padding:16px 18px;background:#ffb800;font-weight:800">
+          <button onclick="location.href='./?shared=1&fallback=1&v=39'" style="border:0;border-radius:14px;padding:16px 18px;background:#ffb800;font-weight:800">
             Abrir OVT e selecionar o arquivo
           </button>
           </body></html>`;
           return new Response(fail,{headers:{"Content-Type":"text/html;charset=UTF-8"}});
         }
 
-        // The app's mobile fallback is the stable path on Samsung/WhatsApp.
-        const target=new URL("./",self.registration.scope);
-        target.searchParams.set("shared","1");
-        target.searchParams.set("fallback","1");
-        target.searchParams.set("v","38");
-        return Response.redirect(target.href,303);
+        return Response.redirect(new URL("./?shared=1&fallback=1&v=39",self.registration.scope).href,303);
       }catch(err){
-        return Response.redirect(new URL("./?shared=1&fallback=1&v=38",self.registration.scope).href,303);
+        return Response.redirect(new URL("./?shared=1&fallback=1&v=39",self.registration.scope).href,303);
       }
     })());
     return;

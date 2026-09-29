@@ -40,18 +40,5 @@
         }
       ]
     }
-  },
-  "file_handlers": [
-    {
-      "action": "./?filehandler=1",
-      "accept": {
-        "application/pdf": [
-          ".pdf"
-        ],
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
-          ".pptx"
-        ]
-      }
-    }
-  ]
+  }
 }
