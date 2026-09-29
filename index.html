@@ -1050,7 +1050,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v37 Dinâmico</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v38 Trainer 4K</small>
       </div>
     </div>
     <div class="top-actions">
@@ -1525,7 +1525,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=37").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=38").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1985,18 +1985,24 @@ window.ovtReceiveAndroidFile=async function(){
 async function renderPage(){
   if(!state.pdf)return;
   const page=await state.pdf.getPage(state.page);
-  const vp=page.getViewport({scale:state.scale});
-  const dpr=Math.min(window.devicePixelRatio||1,3);
-  canvas.width=Math.max(1,Math.floor(vp.width*dpr));
-  canvas.height=Math.max(1,Math.floor(vp.height*dpr));
+  const raw=page.getViewport({scale:1});
+  const displayVp=page.getViewport({scale:state.scale});
+
+  const maxRaw=Math.max(raw.width,raw.height);
+  const targetHi=3000/maxRaw;
+  const hardMax=4096/maxRaw;
+  const renderScale=Math.min(hardMax,Math.max(state.scale,targetHi));
+  const renderVp=page.getViewport({scale:renderScale});
+
+  canvas.width=Math.max(1,Math.floor(renderVp.width));
+  canvas.height=Math.max(1,Math.floor(renderVp.height));
   canvas.style.display="block";
-  canvas.style.width=Math.floor(vp.width)+"px";
-  canvas.style.height=Math.floor(vp.height)+"px";
+  canvas.style.width=Math.max(1,Math.floor(displayVp.width))+"px";
+  canvas.style.height=Math.max(1,Math.floor(displayVp.height))+"px";
   $("viewerEmpty").style.display="none";
   await page.render({
     canvasContext:ctx,
-    viewport:vp,
-    transform:[dpr,0,0,dpr,0,0]
+    viewport:renderVp
   }).promise;
   $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
   renderMarkers();
@@ -2596,6 +2602,26 @@ function downloadText(filename,text){
   return deliverTrainerFile(filename,text);
 }
 
+
+function cleanRegisterBase(filename){
+  return (filename||"Registro")
+    .replace(/\.(pdf|pptx)$/i,"")
+    .replace(/\s*\((corrigido|correção|correcao)\)\s*/ig," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+function trainerNameFromFilename(filename){
+  const base=cleanRegisterBase(filename);
+  const first=base.split(/\s+-\s+|-\s+/)[0].trim();
+  return first || base || "Treinador";
+}
+function safeTrainerFilename(name){
+  return String(name||"Treinador")
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g,"")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
 $("generateViewer").onclick=async()=>{
   if(!state.pdf || !state.pdfBase64){
     alert("Abra um PDF ou PPTX antes de finalizar.");
@@ -2608,8 +2634,13 @@ $("generateViewer").onclick=async()=>{
   state.fileType="pdf";
   state.fileBase64=state.pdfBase64;
 
+  const registerLabel=cleanRegisterBase(state.filename);
+  const trainerName=trainerNameFromFilename(state.filename);
+
   const payload={
     coordinator:state.coordinator,
+    trainerName,
+    registerLabel,
     filename:state.filename,
     fileType:"pdf",
     fileBase64:state.pdfBase64,
@@ -2625,7 +2656,7 @@ $("generateViewer").onclick=async()=>{
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#02060d">
-<title>OVT • Correção do Registro</title>
+<title>${trainerName} • Observações OVT</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/pptxviewjs@1.1.9/dist/PptxViewJS.min.js"><\/script>
@@ -2733,9 +2764,191 @@ canvas{max-width:none;height:auto;background:white}
   .detail-panel.open>*{display:block}
   #resultCard{display:none !important}
 }
+
+/* ===== v38 • devolutiva focada na imagem e leitura ===== */
+.trainer-name{
+  color:#fff;font-size:22px;font-weight:900;letter-spacing:.2px
+}
+.viewer{
+  min-height:0 !important;
+}
+.final-score{
+  font-size:44px !important;
+  font-weight:1000 !important;
+  color:#fff !important;
+  line-height:1 !important;
+  margin:5px 0 12px !important;
+}
+.criterion-final{
+  border-top:1px solid rgba(255,255,255,.06);
+  padding:8px 0;
+}
+.criterion-line{
+  display:flex;justify-content:space-between;gap:8px;align-items:center;
+  font-size:11px;
+}
+.mic-btn{
+  width:100%;
+  border:1px solid rgba(17,156,255,.38);
+  background:#071b2b;color:#fff;border-radius:9px;
+  min-height:36px;padding:7px 9px;
+  text-align:left;font-weight:800;font-size:10px;
+}
+.mic-btn:active{transform:scale(.99)}
+.matrix-card-final{
+  border:1px solid rgba(17,156,255,.18);
+  border-radius:12px;padding:10px;margin-top:8px;background:rgba(255,255,255,.018)
+}
+.matrix-card-final h4{margin:0;font-size:14px}
+.kpi-box{border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:9px}
+.kpi-box .label{font-size:8px;color:#91a5ba}.kpi-box .big{font-size:14px;font-weight:900}
+.summary-note{font-size:9px;color:#91a5ba;margin-top:10px}
+.floating-audio{
+  display:none;
+}
+.detail-panel.open{
+  z-index:80;
+}
+#backResult{
+  border-color:rgba(255,194,27,.45);
+  color:#ffc21b;
+}
+
+@media(max-width:700px){
+  .app{max-width:none !important;width:100% !important;padding:5px 5px 18px !important}
+  header{padding:8px 10px !important;margin-bottom:5px !important}
+  header h1{font-size:18px !important}
+  .meta{font-size:8.5px !important;line-height:1.25 !important}
+
+  .card{margin-bottom:5px !important;border-radius:12px !important}
+  .card:first-of-type .hd{
+    padding:6px 8px !important;font-size:11px !important
+  }
+  .card:first-of-type .bd{padding:4px !important}
+
+  /* A imagem vira o foco principal. */
+  .viewer{
+    height:72dvh !important;
+    max-height:72dvh !important;
+    width:100% !important;
+    border-radius:8px !important;
+    align-items:flex-start !important;
+    justify-content:flex-start !important;
+    overflow:auto !important;
+  }
+  .viewer canvas{
+    flex:none !important;
+  }
+
+  .controls{
+    margin-top:3px !important;
+    gap:3px !important;
+    flex-wrap:nowrap !important;
+  }
+  .controls .btn{
+    min-height:29px !important;
+    padding:4px 7px !important;
+    font-size:8.5px !important;
+    border-radius:8px !important;
+  }
+  #page{min-width:62px !important}
+
+  /* Ao tocar na bolinha, o comentário fica como uma faixa inferior,
+     sem empurrar a imagem para um tamanho minúsculo. */
+  .viewer.split{
+    height:66dvh !important;
+    max-height:66dvh !important;
+  }
+  .detail-panel.open{
+    display:block !important;
+    position:fixed !important;
+    left:5px !important;right:5px !important;bottom:5px !important;
+    margin:0 !important;
+    max-height:29dvh !important;
+    overflow:auto !important;
+    padding:8px !important;
+    border-radius:13px !important;
+    box-shadow:0 -10px 30px rgba(0,0,0,.58);
+  }
+  .detail-panel .tag{font-size:7.5px !important}
+  .detail-panel h3{font-size:12px !important;margin:3px 0 !important}
+  .detail-panel p{font-size:8.5px !important;line-height:1.25 !important}
+  .detail-panel audio{height:28px !important;margin-top:4px !important}
+  .detail-actions{
+    margin-top:5px !important;gap:4px !important;flex-wrap:nowrap !important
+  }
+  .detail-actions .btn{
+    min-height:28px !important;padding:4px 6px !important;font-size:7.8px !important
+  }
+
+  .summary-slide{
+    min-height:100% !important;
+    padding:11px 9px !important;
+  }
+  .summary-slide h2{font-size:20px !important}
+  .summary-slide .sub{font-size:8px !important;margin-bottom:8px !important}
+  .final-grid{
+    display:block !important;
+  }
+  .side-kpi{
+    display:none !important;
+  }
+  .graph{gap:5px !important}
+  .gr{
+    grid-template-columns:72px 1fr 38px !important;
+    gap:5px !important
+  }
+  .gn{font-size:8.5px !important}
+  .gt{height:11px !important}
+  .gv{font-size:11px !important}
+  .matrix-list{margin-top:8px !important}
+  .matrix-card-final{padding:7px !important;margin-top:6px !important}
+  .matrix-card-final h4{font-size:11px !important}
+  .criterion-final{padding:5px 0 !important}
+  .criterion-line{font-size:9px !important}
+  .mic-btn{min-height:31px !important;padding:5px 7px !important;font-size:8.5px !important}
+
+  /* Não mostrar o bloco antigo de tópicos abaixo. */
+  #resultCard{display:none !important}
+}
+
+@media(orientation:landscape) and (max-height:700px){
+  body{overflow:hidden}
+  .app{width:100vw !important;height:100dvh !important;padding:0 !important}
+  header{display:none !important}
+  .card:first-of-type{height:100dvh !important;margin:0 !important;border:0 !important}
+  .card:first-of-type .hd{display:none !important}
+  .card:first-of-type .bd{
+    height:100dvh !important;padding:0 !important;
+    display:grid !important;
+    grid-template-columns:72vw 28vw !important;
+    grid-template-rows:1fr auto !important;
+    overflow:hidden !important;
+  }
+  .viewer{
+    grid-column:1 !important;grid-row:1 !important;
+    height:auto !important;max-height:none !important;
+    border-radius:0 !important
+  }
+  .controls{
+    grid-column:1 !important;grid-row:2 !important;
+    padding:2px 3px 3px !important;background:#071320 !important
+  }
+  .detail-panel.open{
+    grid-column:2 !important;grid-row:1 / span 2 !important;
+    position:relative !important;
+    inset:auto !important;
+    width:28vw !important;height:100dvh !important;max-height:none !important;
+    border-radius:0 !important;
+    overflow:auto !important;
+  }
+}
 </style></head>
 <body><div class="app">
-<header><h1>OVT • Correção do Registro</h1><div class="meta" id="meta"></div></header>
+<header>
+  <h1 id="trainerTitle"></h1>
+  <div class="meta" id="meta"></div>
+</header>
 <div class="card"><div class="hd">Registro corrigido</div><div class="bd">
 <div class="viewer" id="viewer"><canvas id="c"></canvas><img id="pptxImg" alt="Slide do PowerPoint" style="display:none;max-width:100%;height:auto;background:#fff"><div class="markers" id="markers"></div><div class="summary-slide" id="finalSlide"></div></div>
 <div class="controls">
@@ -2756,7 +2969,12 @@ canvas{max-width:none;height:auto;background:white}
   <audio id="floatingAudioPlayer" controls></audio>
   <button id="floatingAudioClose" title="Fechar">×</button>
 </div>
-  <div class="detail-actions"><button class="btn" id="closeDetail">Fechar apontamento</button></div>
+  <div class="detail-actions">
+    <button class="btn" id="prevRelated" style="display:none">‹ anterior</button>
+    <button class="btn" id="nextRelated" style="display:none">próximo ›</button>
+    <button class="btn" id="backResult">Resultado final</button>
+    <button class="btn" id="closeDetail">Fechar</button>
+  </div>
 </div>
 </div></div>
 <div class="card" id="resultCard" style="display:none"><div class="hd">Detalhamento dos apontamentos</div><div class="bd"><div class="summary" id="summary"></div><div class="summary-detail" id="summaryDetail"></div></div></div>
@@ -2766,8 +2984,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/p
 
 
 const DATA=${data},$=id=>document.getElementById(id),fmt=n=>Number(n).toFixed(1).replace(".",",");
-$("meta").textContent=(DATA.filename||"Registro")+" • Coordenador: "+DATA.coordinator;
+$("trainerTitle").textContent=(DATA.trainerName||"Treinador")+" • Observações OVT";
+$("meta").textContent=(DATA.registerLabel||DATA.filename||"Registro")+" • Coord.: "+DATA.coordinator;
 let pdf=null,pptxViewer=null,page=1,pages=0,trainerZoom=1;
+let relatedHits=[],relatedIndex=0;
 const canvas=$("c"),ctx=canvas.getContext("2d"),pptxImg=$("pptxImg");
 
 function trainerSurface(){
@@ -2814,7 +3034,7 @@ function showFinalSlide(){
   canvas.style.display="none";
   $("markers").innerHTML="";
   $("finalSlide").classList.add("show");
-  $("resultCard").style.display="block";
+  $("resultCard").style.display="none";
 
   const mats=DATA.matrices;
   const vals=mats.map(matrixLoss);
@@ -2832,13 +3052,13 @@ function showFinalSlide(){
       notes.forEach(n=>(n.deductions||[]).filter(d=>d.criterion==="standardization").forEach(d=>hits.push({n,d})));
       if(!hits.length) return "";
       const loss=hits.reduce((s,h)=>s+h.d.discount,0);
-      return '<div class="criterion-final"><div class="criterion-line"><b>Padronização</b><span class="mloss">−'+fmt(loss)+'</span></div><div style="margin-top:6px"><button class="mic-btn" data-matrix="Padronização" data-criterion="__PAD__">'+(hits.some(h=>h.n.audio)?'🎙 áudio(s)':'▣ ver apontamentos')+'</button></div></div>';
+      return '<div class="criterion-final"><div class="criterion-line"><b>Padronização</b><span class="mloss">−'+fmt(loss)+'</span></div><div style="margin-top:6px"><button class="mic-btn" data-matrix="Padronização" data-criterion="__PAD__">'+(hits.some(h=>h.n.audio)?'🎙 Abrir correção e áudio':'● Abrir correção')+'</button></div></div>';
     }
     const criteria=DATA.criteria.map(c=>{
       const hits=[]; notes.forEach(n=>(n.deductions||[]).filter(d=>d.criterion===c.id).forEach(d=>hits.push({n,d})));
       return {c,hits,loss:hits.reduce((s,h)=>s+h.d.discount,0)};
     }).filter(x=>x.hits.length);
-    return criteria.map(x=>'<div class="criterion-final"><div class="criterion-line"><b>'+x.c.full+'</b><span class="mloss">−'+fmt(x.loss)+'</span></div><div style="margin-top:6px"><button class="mic-btn" data-matrix="'+matrix+'" data-criterion="'+x.c.id+'">'+(x.hits.some(h=>h.n.audio)?'🎙 áudio(s)':'▣ ver apontamentos')+'</button></div></div>').join('');
+    return criteria.map(x=>'<div class="criterion-final"><div class="criterion-line"><b>'+x.c.full+'</b><span class="mloss">−'+fmt(x.loss)+'</span></div><div style="margin-top:6px"><button class="mic-btn" data-matrix="'+matrix+'" data-criterion="'+x.c.id+'">'+(x.hits.some(h=>h.n.audio)?'🎙 Abrir correção e áudio':'● Abrir correção')+'</button></div></div>').join('');
   }
 
   $("finalSlide").innerHTML =
@@ -2858,10 +3078,10 @@ function showFinalSlide(){
         '<div class="kpi-box"><div class="label">Padronização</div><div class="big">'+std.length+' apontamento(s)</div></div>'+
       '</div>'+
     '</div>'+
-    '<div class="summary-note">Toque em “áudio(s)” ou “ver apontamentos” para ver as referências. Depois use “Ver na página” para voltar diretamente ao slide original.</div>';
+    '<div class="summary-note">Toque em um critério para abrir imediatamente a página marcada e ouvir o comentário correspondente.</div>';
 
   $("finalSlide").querySelectorAll(".mic-btn").forEach(btn=>{
-    btn.onclick=()=>showCriterionDetail(btn.dataset.matrix, btn.dataset.criterion);
+    btn.onclick=()=>openCriterionDirect(btn.dataset.matrix, btn.dataset.criterion);
   });
 }
 
@@ -2877,20 +3097,28 @@ async function render(){
 
   const p=await pdf.getPage(page);
   const raw=p.getViewport({scale:1});
-  const fitScale=Math.max(.35,Math.min(2.4,($("viewer").clientWidth-6)/raw.width));
-  const scale=Math.min(4,fitScale*trainerZoom);
-  const vp=p.getViewport({scale});
-  const dpr=Math.min(window.devicePixelRatio||1,3);
 
-  canvas.width=Math.max(1,Math.floor(vp.width*dpr));
-  canvas.height=Math.max(1,Math.floor(vp.height*dpr));
-  canvas.style.width=Math.floor(vp.width)+"px";
-  canvas.style.height=Math.floor(vp.height)+"px";
+  // Tamanho visual na tela.
+  const fitScale=Math.max(.25,($("viewer").clientWidth-4)/raw.width);
+  const displayScale=Math.max(.25,Math.min(4,fitScale*trainerZoom));
+  const displayVp=p.getViewport({scale:displayScale});
+
+  // Renderização interna de altíssima resolução.
+  // O maior lado fica entre 3840 e 4096 px sempre que o PDF permitir.
+  const maxRaw=Math.max(raw.width,raw.height);
+  const target4K=3840/maxRaw;
+  const hardMax=4096/maxRaw;
+  const renderScale=Math.min(hardMax,Math.max(displayScale,target4K));
+  const renderVp=p.getViewport({scale:renderScale});
+
+  canvas.width=Math.max(1,Math.floor(renderVp.width));
+  canvas.height=Math.max(1,Math.floor(renderVp.height));
+  canvas.style.width=Math.max(1,Math.floor(displayVp.width))+"px";
+  canvas.style.height=Math.max(1,Math.floor(displayVp.height))+"px";
 
   await p.render({
     canvasContext:ctx,
-    viewport:vp,
-    transform:[dpr,0,0,dpr,0,0]
+    viewport:renderVp
   }).promise;
   markers();
 }
@@ -2916,21 +3144,81 @@ $("floatingAudioClose").onclick=()=>{
 };
 
 function openNote(id){
-  const n=DATA.notes.find(x=>x.id===id),total=noteTotal(n);
+  const n=DATA.notes.find(x=>x.id===id);
+  if(!n)return;
+  const total=noteTotal(n);
+
   $("tag").textContent=n.matrix+" • Página "+n.page+(total?" • −"+fmt(total):"");
-  $("nt").textContent=(n.deductions&&n.deductions.length)?n.deductions.map(d=>d.criterionName+" (−"+fmt(d.discount)+")").join(" • "):"Padronização";
+  $("nt").textContent=(n.deductions&&n.deductions.length)
+    ? n.deductions.map(d=>d.criterionName+" (−"+fmt(d.discount)+")").join(" • ")
+    : "Padronização";
   $("np").textContent=n.text||((n.audio)?"Ouça o comentário em áudio.":"Sem observação escrita.");
+
   if(n.audio){
-    $("na").style.display="none";
-    playFloatingAudio(n.audio,"Pág. "+n.page);
+    $("na").src=n.audio;
+    $("na").style.display="block";
+    $("na").load();
   }else{
-    $("na").removeAttribute("src");$("na").style.display="none";
+    $("na").pause();
+    $("na").removeAttribute("src");
+    $("na").style.display="none";
   }
+
   $("viewer").classList.add("split");
   $("detailPanel").classList.add("open");
-  $("detailPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
+  updateRelatedButtons();
 }
+
+function criterionHits(matrix,crit){
+  const hits=[];
+  if(matrix==="Padronização" || crit==="__PAD__"){
+    DATA.notes.filter(n=>n.matrix==="Padronização").forEach(n=>{
+      const d=(n.deductions||[]).find(x=>x.criterion==="standardization") || (n.deductions||[])[0] || {discount:0,criterionName:"Padronização"};
+      hits.push({n,d});
+    });
+  }else{
+    DATA.notes.filter(n=>n.matrix===matrix).forEach(n=>{
+      (n.deductions||[]).filter(d=>d.criterion===crit).forEach(d=>hits.push({n,d}));
+    });
+  }
+  return hits.sort((a,b)=>a.n.page-b.n.page);
+}
+function updateRelatedButtons(){
+  const hasMany=relatedHits.length>1;
+  $("prevRelated").style.display=hasMany?"inline-flex":"none";
+  $("nextRelated").style.display=hasMany?"inline-flex":"none";
+  if(hasMany){
+    $("prevRelated").textContent="‹ "+(relatedIndex+1)+"/"+relatedHits.length;
+    $("nextRelated").textContent=(relatedIndex+1)+"/"+relatedHits.length+" ›";
+  }
+}
+async function openRelated(index){
+  if(!relatedHits.length)return;
+  relatedIndex=(index+relatedHits.length)%relatedHits.length;
+  const hit=relatedHits[relatedIndex];
+  page=hit.n.page;
+  await render();
+  openNote(hit.n.id);
+}
+async function openCriterionDirect(matrix,crit){
+  relatedHits=criterionHits(matrix,crit);
+  relatedIndex=0;
+  if(!relatedHits.length)return;
+  await openRelated(0);
+}
+$("prevRelated").onclick=()=>openRelated(relatedIndex-1);
+$("nextRelated").onclick=()=>openRelated(relatedIndex+1);
+$("backResult").onclick=async()=>{
+  relatedHits=[];relatedIndex=0;
+  $("detailPanel").classList.remove("open");
+  $("viewer").classList.remove("split");
+  $("na").pause();
+  page=pages+1;
+  await render();
+};
+
 $("closeDetail").onclick=()=>{
+  relatedHits=[];relatedIndex=0;
   $("detailPanel").classList.remove("open");
   $("viewer").classList.remove("split");
   $("na").pause();
@@ -3012,8 +3300,8 @@ document.addEventListener("click",e=>{
 (async()=>{try{await loadDeck();await render()}catch(e){console.error(e);alert("Não foi possível abrir o arquivo da correção.")}})();addEventListener("resize",()=>pages&&render());
 <\/script>
 </body></html>`;
-  const safe=(state.filename||"Registro").replace(/\.(pdf|pptx)$/i,"").replace(/[^\wÀ-ÿ-]+/g,"_").replace(/_+/g,"_");
-  const finalName=safe+"_CORRIGIDO.html";
+  const finalLabel=safeTrainerFilename(registerLabel)+" - OBSERVAÇÕES OVT";
+  const finalName=finalLabel+".html";
   const btn=$("generateViewer");
   const oldLabel=btn.textContent;
   btn.disabled=true;
