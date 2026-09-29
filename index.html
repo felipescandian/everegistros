@@ -755,7 +755,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v33 WhatsApp</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v34 Mobile</small>
       </div>
     </div>
     <div class="top-actions">
@@ -992,6 +992,7 @@ const state = {
   originalFile:null,
   fileBytes:null,
   fileBase64:"",
+  pendingFile:null,
   filename:"",
   page:1,
   pages:0,
@@ -1204,7 +1205,9 @@ async function consumeSharedFileWithRetry(){
     setShareProgress(Math.min(70,5+i*3),"Aguardando arquivo do WhatsApp…");
     await new Promise(r=>setTimeout(r,300));
   }
-  failShareProgress("O WhatsApp abriu o OVT, mas não enviou o arquivo. Você pode selecioná-lo agora.");
+  failShareProgress("O WhatsApp não enviou o arquivo automaticamente. Selecione-o abaixo.");
+  const wrap=$("shareProgressWrap");
+  if(wrap) wrap.style.display="none";
   const fb=$("shareFallback");
   if(fb) fb.style.display="grid";
   return false;
@@ -1230,7 +1233,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=33").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=34").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1258,14 +1261,27 @@ async function startApp(){
   // e em navegadores móveis. A permissão será pedida em segundo plano ou ao tocar em gravar.
   const cameFromShare=new URLSearchParams(location.search).get("shared")==="1";
 
-  if(cameFromShare && !state.pdf){
-    $("sharedFileHint").style.display="block";
-    setShareProgress(70,"Finalizando abertura do arquivo…");
-    const ok=await consumeSharedFileWithRetry();
-    if(!ok) return;
-  }
+  if(state.pendingFile && !state.pdf){
+    const selected=state.pendingFile;
+    state.pendingFile=null;
+    $("startOverlay").style.display="none";
+    setShareProgress?.(10,"Abrindo arquivo selecionado…");
+    await loadDocument(selected);
 
-  $("startOverlay").style.display="none";
+    if(!state.pdf){
+      $("startOverlay").style.display="flex";
+      return;
+    }
+  }else{
+    if(cameFromShare && !state.pdf){
+      $("sharedFileHint").style.display="block";
+      setShareProgress(70,"Finalizando abertura do arquivo…");
+      const ok=await consumeSharedFileWithRetry();
+      if(!ok) return;
+    }
+
+    $("startOverlay").style.display="none";
+  }
 
   // Pré-aquece o microfone sem travar a entrada no app.
   if(location.protocol!=="file:" && navigator.mediaDevices?.getUserMedia){
@@ -1286,7 +1302,7 @@ async function startApp(){
 const pickSharedBtn=$("pickSharedFile");
 if(pickSharedBtn){
   pickSharedBtn.addEventListener("click",()=>{
-    const input=$("fileInput");
+    const input=$("pdfInput");
     if(input){
       input.accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/octet-stream";
       input.click();
@@ -1575,12 +1591,34 @@ async function convertPptxToPdf(file){
   });
 }
 
+async function detectDocumentType(file){
+  const lower=(file?.name||"").toLowerCase();
+  const mime=(file?.type||"").toLowerCase();
+
+  if(lower.endsWith(".pdf") || mime==="application/pdf") return "pdf";
+  if(lower.endsWith(".pptx") ||
+     mime==="application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+     mime==="application/vnd.ms-powerpoint") return "pptx";
+
+  try{
+    const head=new Uint8Array(await file.slice(0,8).arrayBuffer());
+    const ascii=String.fromCharCode(...head);
+
+    if(ascii.startsWith("%PDF-")) return "pdf";
+    if(head[0]===0x50 && head[1]===0x4B) return "pptx";
+  }catch(err){
+    console.warn("Não foi possível identificar a assinatura do arquivo",err);
+  }
+
+  return "";
+}
+
 async function loadDocument(file){
-  const lower=(file.name||"").toLowerCase();
-  const isPdf=lower.endsWith(".pdf") || file.type==="application/pdf";
-  const isPptx=lower.endsWith(".pptx") || file.type==="application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  const kind=await detectDocumentType(file);
+  const isPdf=kind==="pdf";
+  const isPptx=kind==="pptx";
   if(!isPdf && !isPptx){
-    alert("Formato não suportado. Use PDF ou PPTX.");
+    alert("Não consegui identificar este arquivo como PDF ou PowerPoint. Tente selecionar novamente.");
     return;
   }
 
@@ -1682,7 +1720,28 @@ async function fitWidth(){
 $("pdfInput").onchange=async e=>{
   const f=e.target.files?.[0];
   if(!f)return;
-  await loadDocument(f);
+
+  const kind=await detectDocumentType(f);
+  if(!kind){
+    failShareProgress?.("Não consegui identificar este arquivo como PDF ou PowerPoint.");
+    alert("Não consegui identificar este arquivo como PDF ou PowerPoint.");
+    e.target.value="";
+    return;
+  }
+
+  const startVisible=$("startOverlay") && $("startOverlay").style.display!=="none";
+
+  if(startVisible){
+    state.pendingFile=f;
+    $("sharedFileHint").style.display="block";
+    const fb=$("shareFallback");
+    if(fb) fb.style.display="none";
+    finishShareProgress?.(`✓ ${f.name || "Arquivo"} selecionado. Toque em “Entrar na correção”.`);
+  }else{
+    await loadDocument(f);
+  }
+
+  e.target.value="";
 };
 $("prevBtn").onclick=async()=>{
   if(state.pdf&&state.page>1){state.page--;await renderPage()}
