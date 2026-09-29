@@ -1257,6 +1257,90 @@ body{padding-bottom:56px !important}
     font-size:14px !important;
   }
 }
+
+/* ===== v40 • limite visual por critério ===== */
+#sheet .criterion{
+  position:relative !important;
+  display:block !important;
+  text-align:left !important;
+  overflow:hidden !important;
+}
+#sheet .criterion-main{
+  display:flex;align-items:center;gap:4px;
+  padding-right:15px;
+}
+#sheet .criterion-main span{margin:0 !important}
+#sheet .criterion-main b{
+  font-size:7.4px;line-height:1;font-weight:900;
+}
+#sheet .criterion-meter{
+  height:3px;
+  margin-top:4px;
+  border-radius:999px;
+  overflow:hidden;
+  background:rgba(255,255,255,.08);
+}
+#sheet .criterion-meter i{
+  display:block;height:100%;
+  background:linear-gradient(90deg,#119cff,#ffc21b);
+  border-radius:999px;
+  transition:width .22s ease;
+}
+#sheet .criterion-limit{
+  margin-top:2px;
+  color:#91a5ba;
+  font-size:5.9px;
+  line-height:1;
+  white-space:nowrap;
+}
+#sheet .criterion-exhausted{
+  opacity:.5;
+  filter:saturate(.45);
+}
+#sheet .criterion-exhausted .criterion-limit{
+  color:#ffb6b6;
+}
+#sheet .criterion-live{
+  margin:3px 0 4px;
+}
+#sheet .criterion-live-bar{
+  height:5px;border-radius:999px;overflow:hidden;
+  background:rgba(255,255,255,.07);
+}
+#sheet .criterion-live-bar i{
+  display:block;height:100%;
+  background:linear-gradient(90deg,#119cff,#ffc21b,#ff8d14);
+  border-radius:999px;
+  transition:width .2s ease;
+}
+#sheet .criterion-live-text{
+  margin-top:2px;
+  font-size:6.4px;
+  color:#9eb1c4;
+}
+#sheet .mini-discount:disabled{
+  opacity:.28 !important;
+  pointer-events:none;
+}
+
+/* swipe hint discreto */
+.viewer::after{
+  content:"↔ deslize para trocar de página";
+  position:absolute;
+  left:50%;bottom:5px;
+  transform:translateX(-50%);
+  z-index:3;
+  pointer-events:none;
+  padding:3px 7px;
+  border-radius:999px;
+  background:rgba(2,8,16,.58);
+  color:rgba(255,255,255,.55);
+  font-size:6.5px;
+  opacity:.65;
+}
+#sec-correct.split-active .viewer::after{
+  bottom:4px;
+}
 </style>
 </head>
 
@@ -1298,7 +1382,7 @@ body{padding-bottom:56px !important}
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v39 Dinâmico</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v40 Limites + Swipe</small>
       </div>
     </div>
     <div class="top-actions">
@@ -1608,6 +1692,22 @@ async function capturePptxSnapshot(timeoutMs=2500){
 }
 
 function getCriterion(id){return CRITERIA.find(c=>c.id===id)}
+
+function criterionLossUsed(id){
+  return +state.notes.reduce((sum,n)=>{
+    return sum+(n.deductions||[])
+      .filter(d=>d.criterion===id)
+      .reduce((a,d)=>a+Number(d.discount||0),0);
+  },0).toFixed(1);
+}
+function criterionRemaining(id){
+  const c=getCriterion(id);
+  if(!c)return 0;
+  return +Math.max(0,c.max-criterionLossUsed(id)).toFixed(1);
+}
+function criterionDraftLoss(id){
+  return +(state.criterionDiscounts[id]||0).toFixed(1);
+}
 function standardizationLoss(){
   return +state.notes
     .filter(n=>n.matrix==="Padronização")
@@ -1775,7 +1875,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=39").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=40").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1887,15 +1987,23 @@ function renderCriteria(){
     btn.classList.toggle("active", Number(btn.dataset.stdValue)===state.standardizationDiscount);
   });
 
-  $("criteriaGrid").innerHTML=CRITERIA.map(c=>`
-    <button class="criterion ${state.selectedCriteria.includes(c.id)?"multi-active":""}" data-id="${c.id}">
-      <span>${c.icon}</span>${c.label}
+  $("criteriaGrid").innerHTML=CRITERIA.map(c=>{
+    const used=criterionLossUsed(c.id);
+    const remaining=+Math.max(0,c.max-used).toFixed(1);
+    const exhausted=remaining<=0;
+    return `
+    <button class="criterion ${state.selectedCriteria.includes(c.id)?"multi-active":""} ${exhausted?"criterion-exhausted":""}" data-id="${c.id}" ${exhausted&&!state.selectedCriteria.includes(c.id)?"disabled":""}>
+      <div class="criterion-main"><span>${c.icon}</span><b>${c.label}</b></div>
+      <div class="criterion-meter"><i style="width:${Math.min(100,(used/c.max)*100)}%"></i></div>
+      <div class="criterion-limit">−${fmt(used)} / ${fmt(c.max)} • resta ${fmt(remaining)}</div>
       <i class="check">${state.selectedCriteria.includes(c.id)?"✓":""}</i>
-    </button>`).join("");
+    </button>`;
+  }).join("");
 
   document.querySelectorAll(".criterion").forEach(btn=>{
     btn.onclick=()=>{
       const id=btn.dataset.id;
+      if(!state.selectedCriteria.includes(id) && criterionRemaining(id)<=0)return;
       if(state.selectedCriteria.includes(id)){
         state.selectedCriteria=state.selectedCriteria.filter(x=>x!==id);
         delete state.criterionDiscounts[id];
@@ -1917,9 +2025,18 @@ function renderCriteria(){
 }
 
 function setCriterionDiscount(id,value){
-  const v=Number(value);
+  let v=Number(value);
   if(!Number.isFinite(v) || v<=0)return;
+  const remaining=criterionRemaining(id);
+  if(remaining<=0){
+    state.criterionDiscounts[id]=0;
+    renderCriteria();
+    renderDeductionBuilder();
+    return;
+  }
+  v=Math.min(v,remaining);
   state.criterionDiscounts[id]=+v.toFixed(1);
+  renderCriteria();
   renderDeductionBuilder();
 }
 
@@ -1930,12 +2047,30 @@ function renderDeductionBuilder(){
     return;
   }
   box.innerHTML=state.selectedCriteria.map(id=>{
-    const c=getCriterion(id), current=state.criterionDiscounts[id]??0.1;
+    const c=getCriterion(id);
+    const used=criterionLossUsed(id);
+    const remainingBefore=+Math.max(0,c.max-used).toFixed(1);
+    let current=state.criterionDiscounts[id]??Math.min(0.1,remainingBefore);
+    current=Math.min(current,remainingBefore);
+    state.criterionDiscounts[id]=+current.toFixed(1);
+    const after=+Math.max(0,remainingBefore-current).toFixed(1);
+    const totalAfter=+Math.min(c.max,used+current).toFixed(1);
+    const pct=Math.min(100,(totalAfter/c.max)*100);
+
     return `<div class="deduction-row" data-row="${id}">
-      <div class="row-title"><span>${escapeHtml(c.full)}</span><strong>−${fmt(current)}</strong></div>
+      <div class="row-title">
+        <span>${escapeHtml(c.full)}</span>
+        <strong>−${fmt(current)}</strong>
+      </div>
+      <div class="criterion-live">
+        <div class="criterion-live-bar"><i style="width:${pct}%"></i></div>
+        <div class="criterion-live-text">
+          ${fmt(totalAfter)} de ${fmt(c.max)} usados • restará ${fmt(after)}
+        </div>
+      </div>
       <div class="mini-discounts">
-        ${[0.1,0.2,0.3].map(v=>`<button class="mini-discount ${current===v?"active":""}" data-id="${id}" data-v="${v}">−${fmt(v)}</button>`).join("")}
-        <input class="custom-mini" data-custom="${id}" inputmode="decimal" placeholder="0,4+"
+        ${[0.1,0.2,0.3].map(v=>`<button class="mini-discount ${current===v?"active":""}" data-id="${id}" data-v="${v}" ${v>remainingBefore?"disabled":""}>−${fmt(v)}</button>`).join("")}
+        <input class="custom-mini" data-custom="${id}" inputmode="decimal" placeholder="até ${fmt(remainingBefore)}"
           value="${current>=0.4?String(current).replace(".",","):""}">
       </div>
     </div>`;
@@ -2320,7 +2455,50 @@ function pointFromEvent(e){
   return {x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)};
 }
 
+
+let viewerSwipeStart=null;
+let viewerDidSwipe=false;
+
+$("viewer").addEventListener("touchstart",e=>{
+  if(e.touches.length!==1)return;
+  const t=e.touches[0];
+  viewerSwipeStart={x:t.clientX,y:t.clientY,time:Date.now()};
+  viewerDidSwipe=false;
+},{passive:true});
+
+$("viewer").addEventListener("touchend",async e=>{
+  if(!viewerSwipeStart || !state.pdf)return;
+  if(!$("sheet").classList.contains("hidden")){
+    viewerSwipeStart=null;
+    return;
+  }
+
+  const t=e.changedTouches?.[0];
+  if(!t){viewerSwipeStart=null;return;}
+
+  const dx=t.clientX-viewerSwipeStart.x;
+  const dy=t.clientY-viewerSwipeStart.y;
+  const elapsed=Date.now()-viewerSwipeStart.time;
+  viewerSwipeStart=null;
+
+  // Se estiver ampliado horizontalmente, o gesto continua sendo pan/rolagem, não troca de página.
+  if($("viewer").scrollWidth>$("viewer").clientWidth+24)return;
+
+  if(elapsed<800 && Math.abs(dx)>=55 && Math.abs(dx)>Math.abs(dy)*1.35){
+    viewerDidSwipe=true;
+    if(dx<0 && state.page<state.pages){
+      state.page++;
+      await renderPage();
+    }else if(dx>0 && state.page>1){
+      state.page--;
+      await renderPage();
+    }
+    setTimeout(()=>viewerDidSwipe=false,120);
+  }
+},{passive:true});
+
 $("viewer").onclick=e=>{
+  if(viewerDidSwipe)return;
   if(!state.pdf)return;
   if(e.target.classList.contains("marker"))return;
   const r=activeSurface().getBoundingClientRect();
@@ -2391,6 +2569,22 @@ async function saveNote(){
   if(!isStandard && !state.selectedCriteria.length){
     alert("Selecione pelo menos um critério.");
     return;
+  }
+
+  if(!isStandard){
+    for(const id of state.selectedCriteria){
+      const remaining=criterionRemaining(id);
+      const draft=Number(state.criterionDiscounts[id]||0);
+      if(draft<=0){
+        alert("Selecione um desconto válido.");
+        return;
+      }
+      if(draft>remaining+0.0001){
+        const c=getCriterion(id);
+        alert(`${c.full}: restam apenas ${fmt(remaining)} ponto(s) disponíveis.`);
+        return;
+      }
+    }
   }
 
   // If the coordinator taps Salvar while the recording is still running,
@@ -3201,6 +3395,22 @@ canvas{max-width:none;height:auto;background:white}
     overflow:auto !important;
   }
 }
+
+.final-criterion-meter{
+  height:5px;border-radius:999px;overflow:hidden;
+  background:rgba(255,255,255,.07);
+  margin-top:4px;
+}
+.final-criterion-meter i{
+  display:block;height:100%;
+  background:linear-gradient(90deg,#119cff,#ffc21b,#ff8d14);
+  border-radius:999px;
+}
+.final-criterion-remain{
+  margin-top:2px;
+  font-size:8px;
+  color:#91a5ba;
+}
 </style></head>
 <body><div class="app">
 <header>
@@ -3316,7 +3526,16 @@ function showFinalSlide(){
       const hits=[]; notes.forEach(n=>(n.deductions||[]).filter(d=>d.criterion===c.id).forEach(d=>hits.push({n,d})));
       return {c,hits,loss:hits.reduce((s,h)=>s+h.d.discount,0)};
     }).filter(x=>x.hits.length);
-    return criteria.map(x=>'<div class="criterion-final"><div class="criterion-line"><b>'+x.c.full+'</b><span class="mloss">−'+fmt(x.loss)+'</span></div><div style="margin-top:6px"><button class="mic-btn" data-matrix="'+matrix+'" data-criterion="'+x.c.id+'">'+(x.hits.some(h=>h.n.audio)?'🎙 Abrir correção e áudio':'● Abrir correção')+'</button></div></div>').join('');
+    return criteria.map(x=>{
+      const remaining=Math.max(0,x.c.max-x.loss);
+      const pct=Math.min(100,(x.loss/x.c.max)*100);
+      return '<div class="criterion-final">'+
+        '<div class="criterion-line"><b>'+x.c.full+'</b><span class="mloss">−'+fmt(x.loss)+' / '+fmt(x.c.max)+'</span></div>'+
+        '<div class="final-criterion-meter"><i style="width:'+pct+'%"></i></div>'+
+        '<div class="final-criterion-remain">resta '+fmt(remaining)+'</div>'+
+        '<div style="margin-top:5px"><button class="mic-btn" data-matrix="'+matrix+'" data-criterion="'+x.c.id+'">'+(x.hits.some(h=>h.n.audio)?'🎙 Abrir correção e áudio':'● Abrir correção')+'</button></div>'+
+      '</div>';
+    }).join('');
   }
 
   $("finalSlide").innerHTML =
@@ -3482,6 +3701,44 @@ $("closeDetail").onclick=()=>{
   $("viewer").classList.remove("split");
   $("na").pause();
 };
+
+let trainerSwipeStart=null;
+let trainerDidSwipe=false;
+$("viewer").addEventListener("touchstart",e=>{
+  if(e.touches.length!==1)return;
+  const t=e.touches[0];
+  trainerSwipeStart={x:t.clientX,y:t.clientY,time:Date.now()};
+  trainerDidSwipe=false;
+},{passive:true});
+
+$("viewer").addEventListener("touchend",async e=>{
+  if(!trainerSwipeStart || !pdf)return;
+  const t=e.changedTouches?.[0];
+  if(!t){trainerSwipeStart=null;return;}
+  const dx=t.clientX-trainerSwipeStart.x;
+  const dy=t.clientY-trainerSwipeStart.y;
+  const elapsed=Date.now()-trainerSwipeStart.time;
+  trainerSwipeStart=null;
+
+  if($("viewer").scrollWidth>$("viewer").clientWidth+24)return;
+
+  if(elapsed<800 && Math.abs(dx)>=55 && Math.abs(dx)>Math.abs(dy)*1.35){
+    trainerDidSwipe=true;
+    $("detailPanel").classList.remove("open");
+    $("viewer").classList.remove("split");
+    $("na").pause();
+
+    if(dx<0 && page<pages+1){
+      page++;
+      await render();
+    }else if(dx>0 && page>1){
+      page--;
+      await render();
+    }
+    setTimeout(()=>trainerDidSwipe=false,120);
+  }
+},{passive:true});
+
 $("prev").onclick=()=>{if(page>1){$("detailPanel").classList.remove("open");$("viewer").classList.remove("split");page--;render()}};
 $("next").onclick=()=>{if(page<pdf.numPages+1){$("detailPanel").classList.remove("open");$("viewer").classList.remove("split");page++;render()}};
 $("zoomInT").onclick=()=>{trainerZoom=Math.min(3.2,trainerZoom*1.22);render()};
