@@ -1,23 +1,33 @@
-const CACHE="ovt-app-v40";
-const APP_SHELL=["./","./index.html","./manifest.webmanifest","./ovt-192.png","./ovt-512.png"];
-self.addEventListener("install",event=>{
-  event.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP_SHELL)).catch(()=>{}));
+const CACHE_NAME = 'eve-revisao-v53';
+const CORE = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './eve-192.png',
+  './eve-512.png',
+  './assets/eve-logo-horizontal.png'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE)));
   self.skipWaiting();
 });
-self.addEventListener("activate",event=>{
-  event.waitUntil((async()=>{
-    const keys=await caches.keys();
-    await Promise.all(keys.filter(k=>k.startsWith("ovt-app-")&&k!==CACHE).map(k=>caches.delete(k)));
-    await self.clients.claim();
-  })());
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+  );
+  self.clients.claim();
 });
-self.addEventListener("fetch",event=>{
-  const url=new URL(event.request.url);
-  if(event.request.method==="POST" && url.pathname.endsWith("/share-target")){
-    event.respondWith(Response.redirect(new URL("./?shared=1&fallback=1&v=40",self.registration.scope).href,303));
-    return;
-  }
-  if(event.request.method==="GET"){
-    event.respondWith(fetch(event.request).catch(()=>caches.match(event.request).then(r=>r||caches.match("./index.html"))));
-  }
+
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  event.respondWith(
+    fetch(req).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(req, copy)).catch(()=>{});
+      return res;
+    }).catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
+  );
 });

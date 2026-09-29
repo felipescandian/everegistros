@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#03070f">
-<title>OVT • Correção Interativa</title>
+<title>EVE • Revisão Metodológica</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="icon" href="ovt-192.png">
+<link rel="icon" href="eve-192.png">
 
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -48,7 +48,7 @@ button,input,textarea{font:inherit}
 button{touch-action:manipulation}
 
 .shell{
-  width:min(100%,720px);
+  width:min(100%,1560px);
   margin:0 auto;
   min-height:100vh;
   padding:calc(10px + env(safe-area-inset-top)) 10px calc(86px + env(safe-area-inset-bottom));
@@ -70,6 +70,7 @@ button{touch-action:manipulation}
   font:800 21px "Barlow Condensed";letter-spacing:.5px
 }
 .brand h1{margin:0;font:800 18px/1 "Barlow Condensed";letter-spacing:.7px}
+.logo img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 .brand h1 span{color:var(--blue)}
 .brand small{display:block;margin-top:2px;color:var(--muted);font-size:9px}
 .top-actions{display:flex;gap:6px}
@@ -117,7 +118,7 @@ button{touch-action:manipulation}
 .viewer-wrap{padding:8px}
 .viewer{
   position:relative;
-  min-height:340px;
+  min-height:620px;
   display:flex;align-items:center;justify-content:center;
   background:#010408;
   border:1px solid rgba(255,255,255,.07);
@@ -286,7 +287,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
 
 .bottomnav{
   position:fixed;left:50%;transform:translateX(-50%);bottom:0;z-index:70;
-  width:min(720px,100%);display:grid;grid-template-columns:repeat(3,1fr);
+  width:min(1560px,100%);display:grid;grid-template-columns:repeat(3,1fr);
   height:72px;padding:7px 8px calc(7px + env(safe-area-inset-bottom));
   border-top:1px solid rgba(17,156,255,.18);background:rgba(2,7,15,.97);backdrop-filter:blur(16px)
 }
@@ -370,6 +371,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
   border:1px solid rgba(17,156,255,.55);font:800 27px "Barlow Condensed";
   background:rgba(17,156,255,.08)
 }
+.start-card .start-logo img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 .start-card h2{margin:0;text-align:center;font:800 27px "Barlow Condensed"}
 .start-card p{margin:5px 0 14px;text-align:center;color:var(--muted);font-size:10px;line-height:1.45}
 .start-input{
@@ -1282,7 +1284,7 @@ body{padding-bottom:56px !important}
 }
 #sheet .criterion-meter i{
   display:block;height:100%;
-  background:linear-gradient(90deg,#119cff,#ffc21b);
+  background:linear-gradient(90deg,#777e85,#eef1f4);
   border-radius:999px;
   transition:width .22s ease;
 }
@@ -1341,27 +1343,336 @@ body{padding-bottom:56px !important}
 #sec-correct.split-active .viewer::after{
   bottom:4px;
 }
+
+/* ===== EVE • identidade preta e prata ===== */
+:root{
+  --bg:#050505;
+  --panel:#0d0d0f;
+  --panel-2:#151518;
+  --line:rgba(220,226,232,.24);
+  --line-strong:rgba(240,243,246,.42);
+  --silver:#d7dce1;
+  --silver-2:#aeb5bc;
+  --white:#f7f8fa;
+  --muted:#9da4ab;
+  --accent:#d9dde2;
+  --accent-2:#8f969e;
+}
+body{background:#050505 !important;color:var(--white) !important}
+.start-card,.card,.bottom-sheet,.modal-card,.summary-slide{
+  background:linear-gradient(180deg,#111214,#08090a) !important;
+  border-color:var(--line) !important;
+}
+.logo,.start-logo{
+  background:linear-gradient(145deg,#1b1d20,#0d0e10) !important;
+  border-color:var(--line-strong) !important;
+}
+.brand h1 em,.step-title .n,.tag,.ml,.gv,.cl{
+  color:var(--silver) !important;
+}
+.btn.gold,.matrix-btn.active,.matrix-tab.active,.discount.active,.mini-discount.active{
+  background:linear-gradient(180deg,#f2f4f6,#aeb4ba) !important;
+  color:#090a0b !important;
+  border-color:#dfe3e7 !important;
+}
+.btn,.matrix-btn,.matrix-tab,.discount,.mini-discount,.rec-btn{
+  border-color:var(--line) !important;
+}
+.viewer-controls .btn,.pagepill{
+  background:#111316 !important;
+  color:#f4f5f6 !important;
+}
+.marker{
+  border-color:#dfe3e7 !important;
+  background:#0c0d0f !important;
+  box-shadow:0 0 0 2px rgba(220,226,232,.13),0 0 10px rgba(220,226,232,.38) !important;
+}
+.marker.has-audio:after{
+  background:#d8dde2 !important;
+  color:#0a0a0a !important;
+}
+.eve-credit{
+  margin:8px 0 12px;
+  padding:8px 10px;
+  border:1px solid rgba(220,226,232,.18);
+  border-radius:10px;
+  background:rgba(255,255,255,.025);
+  display:grid;
+  gap:2px;
+}
+.eve-credit strong{font-size:9px;color:#eef1f3}
+.eve-credit span{font-size:7.5px;color:#989fa6}
+.brand-dev{
+  display:block;
+  margin-top:2px;
+  font-size:6.5px;
+  color:#8d949b;
+  letter-spacing:.2px;
+}
+
+/* ===== v43 • marca EVE visível + documento mais nítido ===== */
+.logo{
+  width:92px !important;
+  height:36px !important;
+  padding:3px 7px !important;
+  border-radius:10px !important;
+  background:#0b0c0e !important;
+}
+.logo img{
+  width:78px !important;
+  max-width:78px !important;
+  height:auto !important;
+  object-fit:contain !important;
+}
+.start-card .start-logo{
+  width:220px !important;
+  height:82px !important;
+  padding:10px 16px !important;
+  border-radius:16px !important;
+  background:#0b0c0e !important;
+}
+.start-card .start-logo img{
+  width:188px !important;
+  max-width:188px !important;
+  height:auto !important;
+  object-fit:contain !important;
+}
+@media(max-width:430px){
+  .logo{width:76px !important;height:34px !important;padding:3px 6px !important}
+  .logo img{width:64px !important;max-width:64px !important}
+  .brand{gap:7px !important}
+  .brand h1{font-size:16px !important}
+}
+.viewer canvas{
+  image-rendering:auto !important;
+  transform:translateZ(0);
+}
+
+
+/* ===== v45 • prioridade absoluta para leitura do documento ===== */
+@media (min-width:901px){
+  .shell{width:min(98vw,1560px)!important;padding-left:14px!important;padding-right:14px!important}
+  .topbar{margin-left:-14px!important;margin-right:-14px!important}
+  #sec-correct .card:first-child{width:100%!important}
+  #sec-correct .viewer{min-height:min(74vh,920px)!important;max-height:none!important}
+  #sec-correct .viewer-wrap{padding:10px!important}
+  #sec-correct #pdfCanvas{flex:none!important}
+  #sec-correct .filebar{font-size:11px!important}
+  #sec-correct .viewer-controls{position:sticky;bottom:4px;z-index:15;background:rgba(2,8,16,.88);border-radius:10px;padding:5px!important;width:max-content;margin-left:auto}
+  #sec-correct .quick-note{font-size:10px}
+}
+@media (min-width:1200px){
+  .brand h1{font-size:22px!important}
+  .logo{width:48px!important;height:48px!important}
+}
+
+
+/* ===== v46 • nitidez adaptativa real: desktop + celular ===== */
+:root{--eve-doc-maxw:1560px}
+#qualityModeBadge{
+  display:inline-flex;align-items:center;gap:5px;
+  min-height:28px;padding:0 9px;border-radius:9px;
+  border:1px solid rgba(255,194,27,.28);
+  background:rgba(255,194,27,.06);color:#ffd45c;
+  font-size:8px;font-weight:900;white-space:nowrap
+}
+#maxQualityBtn{
+  border-color:rgba(255,194,27,.55)!important;
+  color:#111!important;
+  background:linear-gradient(180deg,#ffe27a,#ffc21b)!important;
+}
+body.eve-mobile-mode .shell{width:100%!important;max-width:100%!important}
+body.eve-mobile-mode #sec-correct .viewer{
+  min-height:46dvh!important;
+  max-height:62dvh!important;
+  overflow:auto!important;
+  -webkit-overflow-scrolling:touch;
+}
+body.eve-mobile-mode #sec-correct .viewer-wrap{padding:4px!important}
+body.eve-mobile-mode #sec-correct #pdfCanvas{max-width:none!important;flex:none!important}
+body.eve-mobile-mode #qualityModeBadge{font-size:7px;padding:0 7px}
+
+body.eve-desktop-mode .shell{width:min(99vw,var(--eve-doc-maxw))!important;max-width:none!important}
+body.eve-desktop-mode #sec-correct .viewer{
+  min-height:min(78vh,980px)!important;
+  max-height:none!important;
+  overflow:auto!important;
+}
+body.eve-desktop-mode #sec-correct .viewer-wrap{padding:8px!important}
+body.eve-desktop-mode #sec-correct #pdfCanvas{max-width:none!important;flex:none!important}
+
+/* Em telas muito largas, o documento usa ainda mais área útil. */
+@media (min-width:1600px){
+  :root{--eve-doc-maxw:1840px}
+}
+
+/* No celular o texto precisa ficar fisicamente maior para ser legível.
+   A nitidez vem do DPR; a legibilidade vem deste zoom visual maior. */
+@media (max-width:700px){
+  .viewer-controls{gap:4px!important;flex-wrap:wrap!important}
+  .viewer-controls .controls-group{gap:4px!important}
+  .viewer-controls .btn{padding-left:8px!important;padding-right:8px!important}
+}
+
+
+
+/* ===== v47 • ergonomia sem alterar a nitidez ===== */
+/* Corrige a marca EVE no desktop: a imagem não invade o título. */
+.logo{
+  flex:0 0 92px !important;
+  width:92px !important;
+  height:36px !important;
+  overflow:hidden !important;
+}
+.logo img{
+  width:78px !important;
+  max-width:78px !important;
+  height:auto !important;
+  display:block !important;
+}
+.brand{gap:10px !important;min-width:0 !important}
+.brand > div:last-child{min-width:0}
+.brand h1{white-space:nowrap}
+@media (min-width:1200px){
+  .logo{flex-basis:92px !important;width:92px !important;height:36px !important}
+  .logo img{width:78px !important;max-width:78px !important}
+}
+@media (max-width:700px){
+  .logo{flex-basis:76px !important;width:76px !important;height:32px !important}
+  .logo img{width:64px !important;max-width:64px !important}
+}
+
+/* Setas grandes sobre o documento para trocar de página sem procurar os controles. */
+.viewer{position:relative !important}
+.page-float-btn{
+  position:sticky;
+  top:50%;
+  z-index:45;
+  width:38px;
+  height:58px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.26);
+  background:rgba(3,8,14,.80);
+  color:#fff;
+  font-size:28px;
+  font-weight:800;
+  line-height:1;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  backdrop-filter:blur(7px);
+  box-shadow:0 6px 22px rgba(0,0,0,.35);
+  opacity:.82;
+}
+.page-float-btn:hover{opacity:1;background:rgba(10,16,24,.94)}
+.page-float-btn:disabled{opacity:.20;cursor:default}
+#pageFloatPrev{position:absolute;left:8px;top:50%;transform:translateY(-50%)}
+#pageFloatNext{position:absolute;right:8px;top:50%;transform:translateY(-50%)}
+@media(max-width:700px){
+  .page-float-btn{width:34px;height:52px;font-size:25px}
+  #pageFloatPrev{left:5px}
+  #pageFloatNext{right:5px}
+}
+
+/* Painel de pontuação/apontamento arrastável no computador. */
+@media(min-width:701px){
+  #sheet.bottom-sheet:not(.hidden){
+    position:fixed !important;
+    right:18px;
+    top:86px;
+    left:auto;
+    bottom:auto;
+    max-height:calc(100vh - 104px) !important;
+  }
+  #sheet .sheet-top{
+    cursor:move !important;
+    user-select:none;
+    touch-action:none;
+  }
+  #sheet.dragging-panel{
+    transition:none !important;
+    box-shadow:0 22px 58px rgba(0,0,0,.72),0 0 0 1px rgba(255,194,27,.22) !important;
+  }
+}
+
+
+/* ===== v53 • nota ao vivo durante a pontuação ===== */
+.live-score-card{margin:8px 0 6px;padding:9px 11px;border:1px solid rgba(216,177,87,.38);border-radius:11px;background:linear-gradient(135deg,rgba(216,177,87,.09),rgba(217,221,226,.035));display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
+.live-score-card .live-score-label{font:800 8px/1.1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#aab1b9}
+.live-score-card .live-score-sub{margin-top:3px;font:700 7px/1.2 Inter,system-ui,sans-serif;color:#8f969e}
+.live-score-card .live-score-value{white-space:nowrap;font:900 22px/1 "Barlow Condensed",Inter,sans-serif;color:#d8b157}
+.live-score-card .live-score-value span{font-size:12px;color:#d9dde2}
+@media(max-width:700px){.live-score-card{padding:8px 9px;margin:6px 0 5px}.live-score-card .live-score-value{font-size:25px}.live-score-card .live-score-label{font-size:8px}}
+
+/* ===== v52 • tema preto, dourado e prata ===== */
+:root{
+  --blue:#d8b157;
+  --blue2:#9a7424;
+  --cyan:#d9dde2;
+  --gold:#d8b157;
+  --gold2:#9a7424;
+  --text:#dde2e8;
+  --muted:#9ca5af;
+  --line:rgba(216,177,87,.32);
+  --soft:rgba(217,221,226,.08);
+}
+body{
+  background:
+    radial-gradient(circle at 20% -10%,rgba(216,177,87,.13),transparent 28%),
+    radial-gradient(circle at 90% 30%,rgba(217,221,226,.05),transparent 22%),
+    linear-gradient(180deg,#02050a,#06080b 54%,#02050a) !important;
+}
+.topbar{border-bottom-color:rgba(216,177,87,.22) !important}
+.brand h1,.head-title strong,.sheet-top strong{color:#dde2e8}
+.brand h1 span{color:var(--gold) !important}
+.logo{
+  border-color:rgba(216,177,87,.52) !important;
+  background:linear-gradient(145deg,rgba(216,177,87,.18),rgba(217,221,226,.08)) !important;
+}
+.head-title .dot{background:var(--gold) !important;box-shadow:0 0 12px var(--gold) !important}
+.btn.primary{
+  background:linear-gradient(135deg,var(--gold),var(--gold2)) !important;
+  border-color:transparent !important;
+  color:#111 !important;
+}
+.btn.gold{
+  background:linear-gradient(135deg,#efe3bf,#c79c38) !important;
+  color:#111 !important;
+}
+.nav.active{color:var(--gold) !important;background:rgba(216,177,87,.06) !important}
+.coordinator-chip{color:var(--gold) !important;border-color:rgba(216,177,87,.25) !important;background:rgba(216,177,87,.06) !important}
+.marker{
+  border-color:var(--gold) !important;
+  box-shadow:0 0 0 4px rgba(216,177,87,.12),0 0 18px rgba(216,177,87,.45) !important;
+}
+.marker.has-audio:after{background:#d9dde2 !important;color:#111 !important}
+.score,.loss,.matrix-loss,.crit-loss,.timer{color:var(--gold) !important}
+.count,.pagepill,.head-title small,.brand small,.quick-note .hint{color:#d9dde2 !important}
 </style>
 </head>
 
 <body>
 <div class="start-overlay" id="startOverlay">
   <div class="start-card">
-    <div class="start-logo">OVT</div>
-    <h2>Iniciar correção</h2>
-    <p>Informe o coordenador responsável. O app entra imediatamente; o microfone será solicitado apenas quando necessário.</p>
+    <div class="start-logo"><img src="data:image/png;base64,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" alt="EVE" style="width:188px;height:auto;display:block"></div>
+    <h2>Iniciar revisão</h2>
+    <p>Ferramenta EVE para revisão de registros de treino e alinhamento com a metodologia. Informe o responsável pela revisão.</p>
+    <div class="eve-credit">
+      <strong>Desenvolvido por Felipe Scandian</strong>
+      <span>Uma solução EVE • Desempenho que evolui</span>
+    </div>
     <input class="start-input" id="coordinatorName" placeholder="Nome do coordenador" autocomplete="name">
-    <button class="btn gold" id="startCorrection" style="width:100%;min-height:46px;margin-top:9px">Entrar na correção</button>
+    <button class="btn gold" id="startCorrection" style="width:100%;min-height:46px;margin-top:9px">Entrar na revisão</button>
     <button class="btn" id="installAppBtn" style="width:100%;min-height:42px;margin-top:7px;display:none">
-      📲 Instalar OVT no celular
+      📲 Instalar EVE no celular
     </button>
-    <div id="sharedFileHint" style="display:none;margin-top:8px;padding:8px;border:1px solid rgba(255,194,27,.28);border-radius:10px;color:#ffc21b;font-size:9px;line-height:1.35">
+    <div id="sharedFileHint" style="display:none;margin-top:8px;padding:8px;border:1px solid rgba(220,226,232,.24);border-radius:10px;color:#d9dde2;font-size:9px;line-height:1.35">
       Arquivo recebido do WhatsApp detectado. Informe seu nome e entre para iniciar a correção.
     </div>
 <div id="shareProgressWrap" style="display:none;margin-top:8px">
-  <div id="shareProgressPct" style="font:900 24px/1 'Barlow Condensed';color:#ffc21b;margin-bottom:7px">0%</div>
+  <div id="shareProgressPct" style="font:900 24px/1 'Barlow Condensed';color:#d9dde2;margin-bottom:7px">0%</div>
   <div style="height:9px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.10)">
-    <div id="shareProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg,#119cff,#ffc21b);transition:width .22s ease"></div>
+    <div id="shareProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg,#777e85,#eef1f4);transition:width .22s ease"></div>
   </div>
 </div>
 <div id="shareFallback" style="display:none;margin-top:10px;gap:8px">
@@ -1379,10 +1690,11 @@ body{padding-bottom:56px !important}
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <div class="logo">OVT</div>
+      <div class="logo"><img src="data:image/png;base64,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" alt="EVE" style="width:78px;height:auto;display:block"></div>
       <div>
-        <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v40 Limites + Swipe</small>
+        <h1>REVISÃO <span>METODOLÓGICA</span></h1>
+        <small>revisão de registros de treino • alinhamento metodológico</small>
+        <span class="brand-dev">Desenvolvido por Felipe Scandian</span>
       </div>
     </div>
     <div class="top-actions">
@@ -1424,16 +1736,21 @@ body{padding-bottom:56px !important}
           <canvas id="pdfCanvas" width="1280" height="720"></canvas>
           <img id="pptxSnapshot" alt="Slide do PowerPoint" style="display:none;max-width:100%;height:auto;background:#fff">
           <div id="markerLayer"></div>
+          <button class="page-float-btn" id="pageFloatPrev" title="Página anterior" aria-label="Página anterior">‹</button>
+          <button class="page-float-btn" id="pageFloatNext" title="Próxima página" aria-label="Próxima página">›</button>
         </div>
 
-        <div class="viewer-controls">
+        <div class="split-caption" style="display:block;margin:0 0 6px;color:#b9c9d9;border-color:rgba(255,194,27,.18);background:rgba(255,194,27,.05)">QUALIDADE MÁXIMA ATIVA: o app adapta automaticamente a leitura para computador ou celular.</div>
+          <div class="viewer-controls">
           <div class="controls-group">
             <button class="btn" id="prevBtn">‹</button>
             <button class="btn" id="nextBtn">›</button>
+            <span id="qualityModeBadge">MAX</span>
           </div>
           <div class="controls-group">
             <button class="btn" id="zoomOut">−</button>
             <button class="btn" id="fitBtn">Ajustar</button>
+            <button class="btn" id="maxQualityBtn">MAX</button>
             <button class="btn" id="zoomIn">+</button>
           </div>
         </div>
@@ -1457,9 +1774,15 @@ body{padding-bottom:56px !important}
       <strong>Novo apontamento</strong>
       <small id="sheetPosition">Página — • ponto selecionado</small>
     </div>
+    <div class="score-panel-zoom-tools" title="Zoom independente do painel de pontuação"><span style="font:800 7px Inter;color:#91a5ba;margin-right:2px">PAINEL</span>
+      <button class="score-zoom-btn" id="scoreZoomOut" type="button" aria-label="Diminuir painel de pontuação">−</button>
+      <span class="score-zoom-label" id="scoreZoomLabel" title="Clique para voltar a 100%">100%</span>
+      <button class="score-zoom-btn" id="scoreZoomIn" type="button" aria-label="Aumentar painel de pontuação">+</button>
+    </div>
     <button class="sheet-close" id="closeSheet">✕</button>
   </div>
 
+  <div class="score-panel-scale-body" id="scorePanelScaleBody">
   <div class="top-audio-row">
     <button class="rec-btn compact-mic" id="recordBtn" title="Gravar áudio">🎙️</button>
     <span class="top-audio-label">Áudio</span>
@@ -1499,6 +1822,11 @@ body{padding-bottom:56px !important}
     </div>
   </div>
 
+  <div class="live-score-card" id="liveScoreCard">
+    <div><div class="live-score-label">Nota atual</div><div class="live-score-sub" id="liveScoreSub">sem desconto neste apontamento</div></div>
+    <div class="live-score-value" id="liveScoreValue">10,0 <span>/ 10,0</span></div>
+  </div>
+
   <div class="step-title"><span class="n">4</span> Observação</div>
   <div class="comment-box compact-comment">
     <textarea id="commentText" placeholder="Comentário opcional..."></textarea>
@@ -1508,6 +1836,7 @@ body{padding-bottom:56px !important}
     <button class="btn" id="cancelNote">Cancelar</button>
     <button class="btn gold" id="saveNote">Salvar apontamento</button>
   </div>
+  </div><!-- /score-panel-scale-body -->
 </div>
     <div class="card">
       <div class="card-head">
@@ -1558,7 +1887,7 @@ body{padding-bottom:56px !important}
         </div>
         <div style="display:grid;gap:8px">
           <div class="report-box"><span>Coordenador responsável</span><strong id="finishCoordinator">—</strong></div>
-          <button class="btn gold" id="generateViewer" style="min-height:46px">Gerar arquivo para o treinador</button>
+          <button class="btn gold" id="generateViewer" style="min-height:46px">Gerar arquivo da revisão</button>
           <button class="btn" id="exportBackup" style="min-height:42px">Salvar backup da correção (.json)</button>
         </div>
         <div style="margin-top:10px;color:var(--muted);font-size:9px;line-height:1.5">
@@ -1625,6 +1954,7 @@ const state = {
   scale:1.2,
   pptxCssScale:1,
   pptxSnapshotUrl:"",
+  correctionViewSnapshot:null,
   selectedPoint:{x:.5,y:.5},
   selectedMatrix:"Padronização",
   selectedCriteria:[],
@@ -1644,7 +1974,10 @@ const state = {
   timerId:null
 };
 
-const canvas=$("pdfCanvas"), ctx=canvas.getContext("2d");
+const canvas=$("pdfCanvas"), ctx=canvas.getContext("2d",{alpha:false});
+if(ctx){
+  try{ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";}catch(e){}
+}
 const pptxSnapshot=$("pptxSnapshot");
 
 function activeSurface(){
@@ -1719,6 +2052,17 @@ function baseScore(){
   return +Math.max(0,criteriaScore-standardizationLoss()).toFixed(1);
 }
 function totalLoss(){return +(10-baseScore()).toFixed(1)}
+function currentDraftDiscount(){
+  if(state.selectedMatrix==="Padronização") return Number.isFinite(state.standardizationDiscount)?+state.standardizationDiscount.toFixed(1):0;
+  return +state.selectedCriteria.reduce((sum,id)=>sum+Number(state.criterionDiscounts[id]||0),0).toFixed(1);
+}
+function liveScore(){return +Math.max(0,baseScore()-currentDraftDiscount()).toFixed(1)}
+function renderLiveScorePreview(){
+  const value=$("liveScoreValue"),sub=$("liveScoreSub"); if(!value||!sub)return;
+  const draft=currentDraftDiscount();
+  value.innerHTML=`${fmt(liveScore())} <span>/ 10,0</span>`;
+  sub.textContent=draft>0?`desconto deste apontamento: −${fmt(draft)}`:`nota antes deste apontamento: ${fmt(baseScore())}`;
+}
 
 
 let deferredInstallPrompt=null;
@@ -1766,7 +2110,7 @@ function failShareProgress(message){
 
 function openOvtShareDb(){
   return new Promise((resolve,reject)=>{
-    const req=indexedDB.open("ovt-share-db",1);
+    const req=indexedDB.open("eve-share-db",1);
     req.onupgradeneeded=()=>{
       const db=req.result;
       if(!db.objectStoreNames.contains("shares")) db.createObjectStore("shares",{keyPath:"id"});
@@ -1841,7 +2185,7 @@ async function consumeSharedFileWithRetry(){
   for(let i=0;i<20;i++){
     const item=await readPendingSharedFile().catch(()=>null);
     if(item && item.b64){
-      setShareProgress(75,"Arquivo entregue ao OVT. Preparando…");
+      setShareProgress(75,"Arquivo entregue ao EVE. Preparando…");
       return await consumeSharedFile();
     }
     setShareProgress(Math.min(70,5+i*3),"Aguardando arquivo do WhatsApp…");
@@ -1875,7 +2219,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=40").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=53").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1974,6 +2318,7 @@ function renderMatrices(){
       renderMatrices();
       renderCriteria();
       renderDeductionBuilder();
+      renderLiveScorePreview();
     };
   });
 }
@@ -2013,6 +2358,7 @@ function renderCriteria(){
       }
       renderCriteria();
       renderDeductionBuilder();
+      renderLiveScorePreview();
     };
   });
 
@@ -2020,8 +2366,10 @@ function renderCriteria(){
     btn.onclick=()=>{
       state.standardizationDiscount=Number(btn.dataset.stdValue);
       renderCriteria();
+      renderLiveScorePreview();
     };
   });
+  renderLiveScorePreview();
 }
 
 function setCriterionDiscount(id,value){
@@ -2038,12 +2386,14 @@ function setCriterionDiscount(id,value){
   state.criterionDiscounts[id]=+v.toFixed(1);
   renderCriteria();
   renderDeductionBuilder();
+  renderLiveScorePreview();
 }
 
 function renderDeductionBuilder(){
   const box=$("deductionBuilder");
   if(!state.selectedCriteria.length){
     box.innerHTML=`<div class="viewer-empty" style="padding:12px">Selecione um ou mais critérios acima.</div>`;
+    renderLiveScorePreview();
     return;
   }
   box.innerHTML=state.selectedCriteria.map(id=>{
@@ -2092,6 +2442,7 @@ function renderDeductionBuilder(){
     inp.onchange=apply;
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();apply();}};
   });
+  renderLiveScorePreview();
 }
 
 async function fileToBase64(file){
@@ -2151,7 +2502,7 @@ function ensureConvertOverlay(){
       <h3>Convertendo PowerPoint…</h3>
       <div style="font:900 26px/1 'Barlow Condensed';color:#ffc21b;margin:8px 0 7px" id="convertPercent">0%</div>
       <div style="height:9px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.10);margin:0 0 9px">
-        <div id="convertBar" style="width:0%;height:100%;background:linear-gradient(90deg,#119cff,#ffc21b);transition:width .22s ease"></div>
+        <div id="convertBar" style="width:0%;height:100%;background:linear-gradient(90deg,#777e85,#eef1f4);transition:width .22s ease"></div>
       </div>
       <p id="convertStatus">Preparando o arquivo para correção.</p>
     </div>`;
@@ -2320,7 +2671,7 @@ async function loadDocument(file){
 
     $("viewerEmpty").style.display="none";
     canvas.style.display="block";
-    await fitWidth();
+    await maxQualityView();
 
     if(isPptx){
       setDocStatus?.(`PPTX convertido com sucesso • ${state.pages} página(s).`);
@@ -2367,38 +2718,109 @@ window.ovtReceiveAndroidFile=async function(){
   }
 };
 
+function eveIsMobile(){
+  return window.matchMedia?.("(max-width: 700px)").matches || window.innerWidth<=700;
+}
+
+function eveApplyDeviceClass(){
+  const mobile=eveIsMobile();
+  const movableSheet=$("sheet");
+  if(mobile && movableSheet){
+    movableSheet.style.left="";movableSheet.style.top="";movableSheet.style.right="";movableSheet.style.bottom="";
+  }
+  document.body.classList.toggle("eve-mobile-mode",mobile);
+  document.body.classList.toggle("eve-desktop-mode",!mobile);
+  const badge=$("qualityModeBadge");
+  if(badge) badge.textContent=mobile ? "CELULAR • MAX" : "DESKTOP • MAX";
+  return mobile;
+}
+
 async function renderPage(){
   if(!state.pdf)return;
+  eveApplyDeviceClass();
+
   const page=await state.pdf.getPage(state.page);
-  const raw=page.getViewport({scale:1});
   const displayVp=page.getViewport({scale:state.scale});
 
-  const maxRaw=Math.max(raw.width,raw.height);
-  const targetHi=3000/maxRaw;
-  const hardMax=4096/maxRaw;
-  const renderScale=Math.min(hardMax,Math.max(state.scale,targetHi));
-  const renderVp=page.getViewport({scale:renderScale});
+  /*
+    O canvas é desenhado próximo da densidade física real da tela.
+    Isso evita o erro das versões anteriores: criar um bitmap gigantesco
+    e depois o navegador reduzi-lo, o que suavizava demais letras finas.
+  */
+  const dpr=Math.min(Math.max(window.devicePixelRatio||1,1),4);
+  const mobile=eveIsMobile();
+  const oversample=mobile ? 1.45 : 1.28;
+  let renderScale=state.scale*dpr*oversample;
 
-  canvas.width=Math.max(1,Math.floor(renderVp.width));
-  canvas.height=Math.max(1,Math.floor(renderVp.height));
+  // Limite por borda e por área para evitar falha de memória em celulares.
+  const edgeLimit=mobile ? 8192 : 12288;
+  const areaLimit=mobile ? 38_000_000 : 70_000_000;
+  let renderVp=page.getViewport({scale:renderScale});
+  const edge=Math.max(renderVp.width,renderVp.height);
+  if(edge>edgeLimit){
+    renderScale*=edgeLimit/edge;
+    renderVp=page.getViewport({scale:renderScale});
+  }
+  const area=renderVp.width*renderVp.height;
+  if(area>areaLimit){
+    renderScale*=Math.sqrt(areaLimit/area);
+    renderVp=page.getViewport({scale:renderScale});
+  }
+
+  canvas.width=Math.max(1,Math.round(renderVp.width));
+  canvas.height=Math.max(1,Math.round(renderVp.height));
   canvas.style.display="block";
-  canvas.style.width=Math.max(1,Math.floor(displayVp.width))+"px";
-  canvas.style.height=Math.max(1,Math.floor(displayVp.height))+"px";
+  canvas.style.width=Math.max(1,Math.round(displayVp.width))+"px";
+  canvas.style.height=Math.max(1,Math.round(displayVp.height))+"px";
   $("viewerEmpty").style.display="none";
+
+  try{ctx.setTransform(1,0,0,1,0,0)}catch(e){}
+  try{ctx.clearRect(0,0,canvas.width,canvas.height)}catch(e){}
+  try{ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high"}catch(e){}
+
   await page.render({
     canvasContext:ctx,
-    viewport:renderVp
+    viewport:renderVp,
+    intent:"display",
+    annotationMode:pdfjsLib.AnnotationMode?.ENABLE || 1
   }).promise;
+
   $("pageIndicator").textContent=`${state.page} / ${state.pages}`;
   renderMarkers();
+  updatePageArrowState?.();
 }
 
 async function fitWidth(){
   if(!state.pdf)return;
+  eveApplyDeviceClass();
   const page=await state.pdf.getPage(state.page);
   const raw=page.getViewport({scale:1});
-  const maxW=Math.max(120,$("viewer").clientWidth-8);
-  state.scale=clamp(maxW/raw.width,.35,3);
+  const maxW=Math.max(180,$("viewer").clientWidth-6);
+  state.scale=clamp(maxW/raw.width,.45,8);
+  await renderPage();
+  $("viewer").scrollLeft=0;
+  $("viewer").scrollTop=0;
+}
+
+async function maxQualityView(){
+  if(!state.pdf)return;
+  const mobile=eveApplyDeviceClass();
+  const page=await state.pdf.getPage(state.page);
+  const raw=page.getViewport({scale:1});
+  const viewerW=Math.max(180,$("viewer").clientWidth-6);
+  const fit=viewerW/raw.width;
+
+  // Desktop: ocupa a largura disponível sem reduzir o documento.
+  // Celular: abre maior que a tela, porque texto minúsculo não fica legível
+  // apenas adicionando pixels; ele precisa ganhar tamanho físico e permitir pan.
+  let multiplier=1;
+  if(mobile){
+    multiplier=window.matchMedia?.("(orientation: landscape)").matches ? 1.42 : 1.78;
+  }else if(window.innerWidth<1150){
+    multiplier=1.12;
+  }
+
+  state.scale=clamp(fit*multiplier,.55,8);
   await renderPage();
   $("viewer").scrollLeft=0;
   $("viewer").scrollTop=0;
@@ -2436,19 +2858,150 @@ $("prevBtn").onclick=async()=>{
 $("nextBtn").onclick=async()=>{
   if(state.pdf&&state.page<state.pages){state.page++;await renderPage()}
 };
+
+async function eveGoPage(delta){
+  if(!state.pdf)return;
+  const target=clamp(state.page+delta,1,state.pages);
+  if(target===state.page)return;
+  state.page=target;
+  await renderPage();
+  updatePageArrowState();
+}
+function updatePageArrowState(){
+  const has=!!state.pdf;
+  const prevDisabled=!has || state.page<=1;
+  const nextDisabled=!has || state.page>=state.pages;
+  [$("prevBtn"),$("pageFloatPrev")].filter(Boolean).forEach(b=>b.disabled=prevDisabled);
+  [$("nextBtn"),$("pageFloatNext")].filter(Boolean).forEach(b=>b.disabled=nextDisabled);
+}
+$("pageFloatPrev").onclick=e=>{e.stopPropagation();eveGoPage(-1)};
+$("pageFloatNext").onclick=e=>{e.stopPropagation();eveGoPage(1)};
+
+/* Setas do teclado também trocam páginas, desde que o usuário não esteja digitando. */
+document.addEventListener("keydown",e=>{
+  const tag=(e.target?.tagName||"").toLowerCase();
+  if(tag==="input"||tag==="textarea"||e.target?.isContentEditable)return;
+  if(e.key==="ArrowLeft"){e.preventDefault();eveGoPage(-1)}
+  if(e.key==="ArrowRight"){e.preventDefault();eveGoPage(1)}
+});
 $("zoomIn").onclick=async()=>{
   if(state.pdf){
-    state.scale=clamp(state.scale*1.18,.35,3.5);
+    state.scale=clamp(state.scale*1.25,.55,8);
     await renderPage();
   }
 };
 $("zoomOut").onclick=async()=>{
   if(state.pdf){
-    state.scale=clamp(state.scale/1.18,.35,3.5);
+    state.scale=clamp(state.scale/1.25,.55,8);
     await renderPage();
   }
 };
 $("fitBtn").onclick=fitWidth;
+$("maxQualityBtn").onclick=maxQualityView;
+let eveResizeTimer=null;
+window.addEventListener("resize",()=>{
+  clearTimeout(eveResizeTimer);
+  eveResizeTimer=setTimeout(()=>{if(state.pdf) maxQualityView(); else eveApplyDeviceClass();},220);
+},{passive:true});
+window.addEventListener("orientationchange",()=>{
+  setTimeout(()=>{if(state.pdf) maxQualityView(); else eveApplyDeviceClass();},320);
+},{passive:true});
+eveApplyDeviceClass();
+
+/* Zoom independente REAL do painel: altera o painel inteiro e nunca o documento. */
+(function enableIndependentScoreZoom(){
+  const sheet=$("sheet");
+  const label=$("scoreZoomLabel");
+  const minus=$("scoreZoomOut");
+  const plus=$("scoreZoomIn");
+  if(!sheet||!label||!minus||!plus)return;
+
+  let z=1;
+  try{
+    const saved=parseFloat(localStorage.getItem("eveScorePanelZoom")||"");
+    if(Number.isFinite(saved)) z=clamp(saved,.55,1.80);
+  }catch(_){ }
+
+  function safeMaxZoom(){
+    const mobile=window.innerWidth<=700;
+    if(mobile) return Math.min(1.55, Math.max(.80, window.innerWidth/360));
+    return 1.80;
+  }
+
+  const apply=()=>{
+    z=clamp(Math.round(z*20)/20,.55,safeMaxZoom());
+    sheet.classList.add("score-panel-scaled");
+    sheet.style.setProperty("--score-panel-zoom",String(z));
+    // Chrome/Edge: aplicação direta deixa a mudança imediatamente perceptível.
+    sheet.style.zoom=String(z);
+    label.textContent=Math.round(z*100)+"%";
+    label.title="Zoom do painel: "+Math.round(z*100)+"% • clique para voltar a 100%";
+    minus.disabled=z<=.55;
+    plus.disabled=z>=safeMaxZoom()-.001;
+    try{localStorage.setItem("eveScorePanelZoom",String(z))}catch(_){ }
+  };
+
+  function change(delta,e){
+    if(e){e.preventDefault();e.stopPropagation();}
+    z=clamp(z+delta,.55,safeMaxZoom());
+    apply();
+  }
+
+  minus.onclick=(e)=>change(-.10,e);
+  plus.onclick=(e)=>change(.10,e);
+  label.onclick=(e)=>{e.preventDefault();e.stopPropagation();z=1;apply();};
+
+  // Atalhos quando o painel estiver aberto: Ctrl/⌘ + Alt + +/-
+  window.addEventListener("keydown",e=>{
+    if(sheet.classList.contains("hidden"))return;
+    if((e.ctrlKey||e.metaKey)&&e.altKey&&(e.key==="-"||e.key==="_")){change(-.10,e)}
+    if((e.ctrlKey||e.metaKey)&&e.altKey&&(e.key==="+"||e.key==="=")){change(.10,e)}
+  });
+
+  window.addEventListener("resize",()=>{
+    if(z>safeMaxZoom())z=safeMaxZoom();
+    apply();
+  },{passive:true});
+
+  apply();
+})();
+
+/* Painel de apontamento arrastável no desktop. Arraste pelo cabeçalho. */
+(function enableMovableScorePanel(){
+  const sheet=$("sheet");
+  const handle=sheet?.querySelector(".sheet-top");
+  if(!sheet||!handle)return;
+  let drag=null;
+
+  handle.addEventListener("pointerdown",e=>{
+    if(window.innerWidth<=700)return;
+    if(e.target.closest("button"))return;
+    const r=sheet.getBoundingClientRect();
+    drag={dx:e.clientX-r.left,dy:e.clientY-r.top};
+    sheet.classList.add("dragging-panel");
+    try{handle.setPointerCapture(e.pointerId)}catch(_){}
+    e.preventDefault();
+  });
+  handle.addEventListener("pointermove",e=>{
+    if(!drag)return;
+    const maxLeft=Math.max(4,window.innerWidth-sheet.offsetWidth-4);
+    const maxTop=Math.max(4,window.innerHeight-sheet.offsetHeight-4);
+    const left=clamp(e.clientX-drag.dx,4,maxLeft);
+    const top=clamp(e.clientY-drag.dy,4,maxTop);
+    sheet.style.left=left+"px";
+    sheet.style.top=top+"px";
+    sheet.style.right="auto";
+    sheet.style.bottom="auto";
+  });
+  const end=e=>{
+    if(!drag)return;
+    drag=null;
+    sheet.classList.remove("dragging-panel");
+    try{handle.releasePointerCapture(e.pointerId)}catch(_){}
+  };
+  handle.addEventListener("pointerup",end);
+  handle.addEventListener("pointercancel",end);
+})();
 
 function pointFromEvent(e){
   const r=activeSurface().getBoundingClientRect();
@@ -2513,10 +3066,19 @@ $("newNoteBtn").onclick=()=>{
 };
 
 async function openSheet({autoRecord=false}={}){
+  // Guarda exatamente o enquadramento usado antes de abrir a pontuação.
+  // Assim, ao salvar/cancelar, o documento volta para o MESMO zoom e posição.
+  if(state.pdf){
+    state.correctionViewSnapshot={
+      scale:state.scale,
+      scrollLeft:$("viewer").scrollLeft,
+      scrollTop:$("viewer").scrollTop
+    };
+  }
   state.selectedCriteria=[];
   state.criterionDiscounts={};
   state.standardizationDiscount=null;
-  renderMatrices();renderCriteria();renderDeductionBuilder();
+  renderMatrices();renderCriteria();renderDeductionBuilder();renderLiveScorePreview();
   $("sheetPosition").textContent=`Página ${state.page} • ${state.selectedMatrix}`;
   $("commentText").value="";
   await clearCurrentAudio();
@@ -2541,8 +3103,23 @@ async function closeSheet(){
   }
   $("sheet").classList.add("hidden");
   $("sec-correct").classList.remove("split-active");
+
+  const snap=state.correctionViewSnapshot;
+  state.correctionViewSnapshot=null;
+
   setTimeout(async()=>{
-    if(state.pdf) await fitWidth();
+    if(!state.pdf)return;
+    if(snap){
+      state.scale=snap.scale;
+      await renderPage();
+      requestAnimationFrame(()=>{
+        $("viewer").scrollLeft=snap.scrollLeft;
+        $("viewer").scrollTop=snap.scrollTop;
+        renderMarkers();
+      });
+    }else{
+      await maxQualityView();
+    }
   },60);
 }
 $("closeSheet").onclick=closeSheet;
@@ -2773,7 +3350,7 @@ function renderSummary(){
   $("finishCoordinator").textContent=state.coordinator||"—";
   $("matrixSummary").innerHTML=matrixSummaryHTML(true);
 }
-function renderAll(){renderMarkers();renderLog();renderSummary()}
+function renderAll(){renderMarkers();renderLog();renderSummary();renderLiveScorePreview()}
 
 /* Áudio robusto • máximo 60 segundos */
 let recordTimerStart=0;
@@ -2981,7 +3558,7 @@ $("finishBtn").onclick=()=>go("finish");
 
 function getProjectData(){
   return {
-    app:"OVT Correção Interativa",version:"2.0",
+    app:"EVE Revisão Metodológica",version:"2.0",
     coordinator:state.coordinator,filename:state.filename,fileType:state.fileType,score:baseScore(),
     matrices:MATRICES.map(matrixData),
     criteria:CRITERIA.map(c=>({id:c.id,name:c.full,max:c.max,current:state.scores[c.id],loss:+(c.max-state.scores[c.id]).toFixed(1)})),
@@ -3025,8 +3602,8 @@ async function deliverTrainerFile(filename,text){
   if(navigator.share && navigator.canShare?.({files:[file]})){
     try{
       await navigator.share({
-        title:"Correção OVT",
-        text:"Arquivo de correção OVT",
+        title:"Revisão EVE",
+        text:"Arquivo de revisão EVE",
         files:[file]
       });
       return "shared";
@@ -3074,6 +3651,20 @@ function safeTrainerFilename(name){
     .trim();
 }
 
+
+function askFinalFilename(defaultBase){
+  const raw=window.prompt(
+    "Digite o nome do arquivo que será enviado ao professor:",
+    defaultBase
+  );
+  if(raw===null)return null;
+  let name=String(raw).trim();
+  if(!name)name=defaultBase;
+  name=name.replace(/[<>:"/\\|?*\x00-\x1F]/g,"").trim();
+  if(!/\.html$/i.test(name))name+=".html";
+  return name;
+}
+
 $("generateViewer").onclick=async()=>{
   if(!state.pdf || !state.pdfBase64){
     alert("Abra um PDF ou PPTX antes de finalizar.");
@@ -3108,13 +3699,13 @@ $("generateViewer").onclick=async()=>{
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#02060d">
-<title>${trainerName} • Observações OVT</title>
+<title>${trainerName} • Revisão Metodológica EVE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/pptxviewjs@1.1.9/dist/PptxViewJS.min.js"><\/script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#02060d;color:#f5f8fc;font-family:Arial,sans-serif}
-.app{max-width:760px;margin:auto;padding:10px 10px 40px}
+.app{width:min(100%,1600px);max-width:1600px;margin:auto;padding:10px 10px 40px}
 header{padding:14px;border:1px solid rgba(20,157,255,.3);border-radius:16px;background:#081624;margin-bottom:10px}
 h1{margin:0;font-size:20px}.meta{color:#91a5ba;font-size:11px;margin-top:4px}
 .card{border:1px solid rgba(20,157,255,.3);border-radius:16px;background:#071320;margin-bottom:10px;overflow:hidden}
@@ -3162,6 +3753,12 @@ canvas{max-width:none;height:auto;background:white}
 .controls{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:6px;flex-wrap:wrap}
 .controls .btn{padding:6px 9px;font-size:10px;min-height:32px}
 #page{min-width:74px;text-align:center}
+
+@media(min-width:901px){
+  .app{width:min(96vw,1600px);max-width:1600px}
+  .viewer{width:100%;max-height:78vh}
+  .card:first-of-type .bd{padding:8px}
+}
 
 @media(max-width:700px){
   .app{padding:7px 7px 24px}
@@ -3411,6 +4008,148 @@ canvas{max-width:none;height:auto;background:white}
   font-size:8px;
   color:#91a5ba;
 }
+
+/* ===== v52 • layout coeso e paleta preto, dourado e prata ===== */
+.final-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:14px;align-items:start}
+.final-main-col{display:grid;gap:12px}
+.graph-panel,.helper-box{border:1px solid rgba(216,177,87,.18);border-radius:14px;padding:12px;background:rgba(255,255,255,.018)}
+.summary-top-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 14px}
+.score-shell{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+.score-kicker{width:100%;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ca5af}
+.score-suffix{font-size:18px;font-weight:900;color:#d8b157;margin-bottom:6px}
+.matrix-list{display:grid;gap:10px;margin-top:0}
+.mloss{font-weight:900;color:#d8b157}
+.accent{color:#d8b157 !important}
+.helper-box p{margin:0;color:#d9dde2;font-size:11px;line-height:1.45}
+@media(max-width:980px){
+  .summary-top-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .final-grid{grid-template-columns:1fr}
+}
+
+/* EVE trainer • preto, dourado e prata */
+body{background:#050505 !important;color:#dde2e8 !important}
+header,.card,.detail-panel,.matrix,.ai,.crit,.kpi-box,.matrix-card-final,.graph-panel,.helper-box,#detailPanel > .detail-popup-card{
+  background:linear-gradient(180deg,#0f1013,#090a0d) !important;
+  border-color:rgba(216,177,87,.20) !important;
+}
+header{box-shadow:0 0 0 1px rgba(255,255,255,.02) inset}
+.hd,h1,.trainer-name,.mn,.matrix-card-final h4,.criterion-line b,#nt{color:#dde2e8 !important}
+.meta,.summary-slide .sub,.summary-note,.kpi-box .label,.final-criterion-remain,.score-kicker,.ai .am,.detail-panel .tag,.tag{color:#a5aeba !important}
+.ml,.gv,.tag,.cl,.final-criterion-remain,.mloss,.accent,.score-suffix{color:#d8b157 !important}
+.gf,.final-criterion-meter i{background:linear-gradient(90deg,#d9dde2,#d8b157) !important}
+.btn,.mic-btn{
+  border-color:rgba(216,177,87,.28) !important;
+  background:linear-gradient(180deg,#17191d,#111317) !important;
+  color:#f0f2f4 !important;
+}
+#backResult{border-color:rgba(216,177,87,.45) !important;color:#d8b157 !important}
+#closeDetail{background:linear-gradient(135deg,#efe3bf,#c79c38) !important;color:#111 !important;border-color:transparent !important}
+.m{
+  border-color:#d8b157 !important;
+  background:#0b0c0e !important;
+  box-shadow:0 0 0 3px rgba(216,177,87,.12),0 0 15px rgba(216,177,87,.40) !important;
+}
+.m.audio:after{background:#d9dde2 !important;color:#0a0a0a !important}
+.summary-slide{background:linear-gradient(180deg,#0b0c0f,#050505) !important;color:#dde2e8 !important}
+.final-score{color:#dde2e8 !important;font-size:52px !important;margin:0 !important}
+.kpi-box .big{font-size:17px;font-weight:900;color:#dde2e8}
+.final-criterion-meter{background:rgba(255,255,255,.07) !important}
+#detailPanel > .detail-popup-card{border-color:rgba(216,177,87,.35) !important;background:linear-gradient(180deg,#111316,#090a0d) !important}
+
+
+/* ===== v48 • zoom independente do painel de pontuação ===== */
+#sheet{--score-panel-zoom:1}
+#sheet .score-panel-zoom-tools{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  margin-left:auto;
+  margin-right:4px;
+}
+#sheet .score-zoom-btn{
+  width:26px;
+  height:26px;
+  min-width:26px;
+  padding:0;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.16);
+  background:#071421;
+  color:#fff;
+  font:900 14px/1 Inter,system-ui,sans-serif;
+  cursor:pointer;
+}
+#sheet .score-zoom-btn:hover{border-color:rgba(255,194,27,.65);color:#ffc21b}
+#sheet .score-zoom-label{
+  min-width:42px;
+  text-align:center;
+  color:#ffc21b;
+  font:900 8px/1 Inter,system-ui,sans-serif;
+  letter-spacing:.15px;
+  cursor:pointer;
+  user-select:none;
+}
+#sheet .score-panel-scale-body{
+  zoom:1 !important;
+}
+/* O zoom passa a ser aplicado ao painel inteiro, não só ao conteúdo interno. */
+#sheet.score-panel-scaled{
+  zoom:var(--score-panel-zoom) !important;
+}
+@media(max-width:700px){
+  #sheet .score-zoom-btn{width:30px;height:30px;min-width:30px;font-size:17px}
+  #sheet .score-zoom-label{min-width:46px;font-size:9px}
+  #sheet .score-panel-zoom-tools{gap:5px;margin-right:2px}
+}
+
+/* ===== v51 • comentário abre sobre o documento, sem alterar o enquadramento ===== */
+#detailPanel{
+  position:fixed !important;
+  inset:0 !important;
+  width:100vw !important;
+  height:100dvh !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:14px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:rgba(0,0,0,.64) !important;
+  backdrop-filter:blur(5px);
+  display:none !important;
+  align-items:center !important;
+  justify-content:center !important;
+  z-index:9999 !important;
+  overflow:auto !important;
+  opacity:1 !important;
+}
+#detailPanel.open{display:flex !important}
+#detailPanel::before{display:none !important}
+#detailPanel > .detail-popup-card{
+  width:min(680px,calc(100vw - 28px));
+  max-height:min(78dvh,720px);
+  overflow:auto;
+  padding:18px;
+  border-radius:18px;
+  border:1px solid rgba(17,156,255,.48);
+  background:linear-gradient(180deg,#0b1c2d,#06111d);
+  box-shadow:0 24px 70px rgba(0,0,0,.62),0 0 0 1px rgba(255,255,255,.035) inset;
+}
+#detailPanel .tag{font-size:11px !important}
+#detailPanel h3{font-size:21px !important;line-height:1.15 !important;margin:6px 0 10px !important}
+#detailPanel p{font-size:16px !important;line-height:1.55 !important;color:#f2f6fa !important;white-space:pre-wrap}
+#detailPanel audio{height:40px !important;margin-top:12px !important}
+#detailPanel .detail-actions{margin-top:14px !important;justify-content:flex-end}
+#detailPanel .detail-actions .btn{font-size:11px !important;min-height:38px !important;padding:8px 12px !important}
+#closeDetail{background:linear-gradient(135deg,#f7f9fb,#cfd8e2) !important;color:#07111d !important;border-color:transparent !important;min-width:92px}
+@media(max-width:700px){
+  #detailPanel{padding:9px !important;align-items:center !important}
+  #detailPanel > .detail-popup-card{width:100%;max-height:82dvh;padding:14px;border-radius:15px}
+  #detailPanel .tag{font-size:9px !important}
+  #detailPanel h3{font-size:18px !important}
+  #detailPanel p{font-size:15px !important;line-height:1.5 !important}
+  #detailPanel .detail-actions{position:sticky;bottom:-14px;background:linear-gradient(180deg,rgba(6,17,29,.25),#06111d 30%);padding:10px 0 2px}
+}
+
 </style></head>
 <body><div class="app">
 <header>
@@ -3426,22 +4165,25 @@ canvas{max-width:none;height:auto;background:white}
 <button class="btn" id="fitT">Ajustar</button>
 <button class="btn" id="zoomInT">+</button>
 <button class="btn" id="next">›</button>
+<span class="btn" style="border-color:rgba(255,194,27,.45);color:#ffc21b;pointer-events:none">QUALIDADE MÁXIMA</span>
 </div>
 <div class="detail-panel" id="detailPanel">
-  <div class="tag" id="tag"></div>
-  <h3 id="nt"></h3>
-  <p id="np"></p>
-  <audio id="na" controls style="display:none"></audio>
-<div class="floating-audio" id="floatingAudio">
-  <div class="fa-meta" id="floatingAudioMeta">Áudio</div>
-  <audio id="floatingAudioPlayer" controls></audio>
-  <button id="floatingAudioClose" title="Fechar">×</button>
-</div>
-  <div class="detail-actions">
-    <button class="btn" id="prevRelated" style="display:none">‹ anterior</button>
-    <button class="btn" id="nextRelated" style="display:none">próximo ›</button>
-    <button class="btn" id="backResult">Resultado final</button>
-    <button class="btn" id="closeDetail">Fechar</button>
+  <div class="detail-popup-card">
+    <div class="tag" id="tag"></div>
+    <h3 id="nt"></h3>
+    <p id="np"></p>
+    <audio id="na" controls style="display:none"></audio>
+    <div class="floating-audio" id="floatingAudio">
+      <div class="fa-meta" id="floatingAudioMeta">Áudio</div>
+      <audio id="floatingAudioPlayer" controls></audio>
+      <button id="floatingAudioClose" title="Fechar">×</button>
+    </div>
+    <div class="detail-actions">
+      <button class="btn" id="prevRelated" style="display:none">‹ anterior</button>
+      <button class="btn" id="nextRelated" style="display:none">próximo ›</button>
+      <button class="btn" id="backResult">Resultado da revisão</button>
+      <button class="btn" id="closeDetail">OK</button>
+    </div>
   </div>
 </div>
 </div></div>
@@ -3452,10 +4194,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/p
 
 
 const DATA=${data},$=id=>document.getElementById(id),fmt=n=>Number(n).toFixed(1).replace(".",",");
-$("trainerTitle").textContent=(DATA.trainerName||"Treinador")+" • Observações OVT";
-$("meta").textContent=(DATA.registerLabel||DATA.filename||"Registro")+" • Coord.: "+DATA.coordinator;
+$("trainerTitle").textContent=(DATA.trainerName||"Treinador")+" • Revisão Metodológica";
+$("meta").textContent=(DATA.registerLabel||DATA.filename||"Registro")+" • Responsável: "+DATA.coordinator+" • Desenvolvido por Felipe Scandian | EVE";
 let pdf=null,pptxViewer=null,page=1,pages=0,trainerZoom=1;
-let relatedHits=[],relatedIndex=0;
+let relatedHits=[],relatedIndex=0,noteViewSnapshot=null;
 const canvas=$("c"),ctx=canvas.getContext("2d"),pptxImg=$("pptxImg");
 
 function trainerSurface(){
@@ -3538,24 +4280,31 @@ function showFinalSlide(){
     }).join('');
   }
 
+  $("viewer").scrollLeft=0;
+  $("viewer").scrollTop=0;
+
   $("finalSlide").innerHTML =
-    '<h2>Resultado final</h2>'+
-    '<div class="sub">Visão executiva • perdas por matriz, critérios e apontamentos em áudio.</div>'+
-    '<div style="font-size:10px;color:#91a5ba;margin-top:7px">NOTA FINAL</div><div class="final-score">'+fmt(DATA.score)+' / 10,0</div>'+
+    '<h2>Resultado da revisão</h2>'+
+    '<div class="sub">Síntese da revisão metodológica • perdas por matriz, critérios e apontamentos em áudio.</div>'+
+    '<div class="score-shell"><div class="score-kicker">Nota final</div><div class="final-score">'+fmt(DATA.score)+'</div><div class="score-suffix">/ 10,0</div></div>'+
+    '<div class="summary-top-kpis">'+
+      '<div class="kpi-box"><div class="label">Maior perda</div><div class="big accent">'+mats[vals.indexOf(Math.max(...vals))]+'</div></div>'+
+      '<div class="kpi-box"><div class="label">Critério com maior impacto</div><div class="big">'+topLossName+'</div></div>'+
+      '<div class="kpi-box"><div class="label">Total de descontos</div><div class="big">'+fmt(totalPointsLost)+'</div></div>'+
+      '<div class="kpi-box"><div class="label">Padronização</div><div class="big">'+std.length+' apontamento(s)</div></div>'+
+    '</div>'+
     '<div class="final-grid">'+
-      '<div><div class="graph">'+
-      mats.map((m,i)=>'<div class="gr"><div class="gn">'+m+'</div><div class="gt"><div class="gf" style="width:'+Math.min(100,(vals[i]/max)*100)+'%"></div></div><div class="gv">'+(vals[i]?'−'+fmt(vals[i]):'0,0')+'</div></div>').join('')+
-      '</div><div class="matrix-list" style="margin-top:14px">'+
-      mats.map(m=>'<div class="matrix-card-final"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h4>'+m+'</h4><div class="mloss">'+(matrixLoss(m)?'−'+fmt(matrixLoss(m)):'0,0')+'</div></div>'+criteriaForMatrix(m)+'</div>').join('')+
-      '</div></div>'+
-      '<div class="side-kpi">'+
-        '<div class="kpi-box"><div class="label">Maior perda</div><div class="big accent">'+mats[vals.indexOf(Math.max(...vals))]+'</div></div>'+
-        '<div class="kpi-box"><div class="label">Critério com maior impacto</div><div class="big">'+topLossName+'</div></div>'+
-        '<div class="kpi-box"><div class="label">Total de descontos</div><div class="big">'+fmt(totalPointsLost)+'</div></div>'+
-        '<div class="kpi-box"><div class="label">Padronização</div><div class="big">'+std.length+' apontamento(s)</div></div>'+
+      '<div class="final-main-col">'+
+        '<div class="graph-panel"><div class="graph">'+
+          mats.map((m,i)=>'<div class="gr"><div class="gn">'+m+'</div><div class="gt"><div class="gf" style="width:'+Math.min(100,(vals[i]/max)*100)+'%"></div></div><div class="gv">'+(vals[i]?'−'+fmt(vals[i]):'0,0')+'</div></div>').join('')+
+        '</div></div>'+
+        '<div class="helper-box"><p>Toque em <b>“Abrir correção”</b> para ir diretamente à página marcada e visualizar o comentário ou áudio correspondente.</p></div>'+
+      '</div>'+
+      '<div class="matrix-list">'+
+        mats.map(m=>'<div class="matrix-card-final"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h4>'+m+'</h4><div class="mloss">'+(matrixLoss(m)?'−'+fmt(matrixLoss(m)):'0,0')+'</div></div>'+criteriaForMatrix(m)+'</div>').join('')+
       '</div>'+
     '</div>'+
-    '<div class="summary-note">Toque em um critério para abrir imediatamente a página marcada e ouvir o comentário correspondente.</div>';
+    '<div class="summary-note">Paleta EVE ajustada para preto, dourado e prata. A leitura permanece em qualidade máxima.</div>';
 
   $("finalSlide").querySelectorAll(".mic-btn").forEach(btn=>{
     btn.onclick=()=>openCriterionDirect(btn.dataset.matrix, btn.dataset.criterion);
@@ -3575,27 +4324,46 @@ async function render(){
   const p=await pdf.getPage(page);
   const raw=p.getViewport({scale:1});
 
-  // Tamanho visual na tela.
-  const fitScale=Math.max(.25,($("viewer").clientWidth-4)/raw.width);
-  const displayScale=Math.max(.25,Math.min(4,fitScale*trainerZoom));
+  // A devolutiva usa o MESMO princípio de qualidade máxima do corretor.
+  // Desktop e celular têm comportamento próprio, sem reduzir a resolução do PDF salvo.
+  const mobile=window.matchMedia("(max-width:700px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const viewerWidth=Math.max(220,$("viewer").clientWidth-4);
+  const fitScale=Math.max(.25,viewerWidth/raw.width);
+  const displayScale=Math.max(.25,Math.min(8,fitScale*trainerZoom));
   const displayVp=p.getViewport({scale:displayScale});
 
-  // Renderização interna de altíssima resolução.
-  // O maior lado fica entre 3840 e 4096 px sempre que o PDF permitir.
-  const maxRaw=Math.max(raw.width,raw.height);
-  const target4K=3840/maxRaw;
-  const hardMax=4096/maxRaw;
-  const renderScale=Math.min(hardMax,Math.max(displayScale,target4K));
-  const renderVp=p.getViewport({scale:renderScale});
+  const dpr=Math.min(Math.max(window.devicePixelRatio||1,1),4);
+  const oversample=mobile ? 1.45 : 1.28;
+  let renderScale=displayScale*dpr*oversample;
 
-  canvas.width=Math.max(1,Math.floor(renderVp.width));
-  canvas.height=Math.max(1,Math.floor(renderVp.height));
-  canvas.style.width=Math.max(1,Math.floor(displayVp.width))+"px";
-  canvas.style.height=Math.max(1,Math.floor(displayVp.height))+"px";
+  // Limites altos, mas seguros, iguais ao visualizador principal.
+  const edgeLimit=mobile ? 8192 : 12288;
+  const areaLimit=mobile ? 38_000_000 : 70_000_000;
+  let renderVp=p.getViewport({scale:renderScale});
+  const edge=Math.max(renderVp.width,renderVp.height);
+  if(edge>edgeLimit){
+    renderScale*=edgeLimit/edge;
+    renderVp=p.getViewport({scale:renderScale});
+  }
+  const area=renderVp.width*renderVp.height;
+  if(area>areaLimit){
+    renderScale*=Math.sqrt(areaLimit/area);
+    renderVp=p.getViewport({scale:renderScale});
+  }
+
+  canvas.width=Math.max(1,Math.round(renderVp.width));
+  canvas.height=Math.max(1,Math.round(renderVp.height));
+  canvas.style.width=Math.max(1,Math.round(displayVp.width))+"px";
+  canvas.style.height=Math.max(1,Math.round(displayVp.height))+"px";
+
+  try{ctx.setTransform(1,0,0,1,0,0)}catch(e){}
+  try{ctx.clearRect(0,0,canvas.width,canvas.height)}catch(e){}
+  try{ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high"}catch(e){}
 
   await p.render({
     canvasContext:ctx,
-    viewport:renderVp
+    viewport:renderVp,
+    intent:"display"
   }).promise;
   markers();
 }
@@ -3642,7 +4410,13 @@ function openNote(id){
     $("na").style.display="none";
   }
 
-  $("viewer").classList.add("split");
+  // O comentário abre por cima da página. Nada no documento é redimensionado.
+  noteViewSnapshot={
+    zoom:trainerZoom,
+    scrollLeft:$("viewer").scrollLeft,
+    scrollTop:$("viewer").scrollTop,
+    page
+  };
   $("detailPanel").classList.add("open");
   updateRelatedButtons();
 }
@@ -3689,18 +4463,31 @@ $("nextRelated").onclick=()=>openRelated(relatedIndex+1);
 $("backResult").onclick=async()=>{
   relatedHits=[];relatedIndex=0;
   $("detailPanel").classList.remove("open");
-  $("viewer").classList.remove("split");
   $("na").pause();
+  noteViewSnapshot=null;
   page=pages+1;
   await render();
 };
 
-$("closeDetail").onclick=()=>{
+function closeTrainerNote(){
   relatedHits=[];relatedIndex=0;
   $("detailPanel").classList.remove("open");
-  $("viewer").classList.remove("split");
   $("na").pause();
-};
+  if(noteViewSnapshot && noteViewSnapshot.page===page){
+    trainerZoom=noteViewSnapshot.zoom;
+    const sx=noteViewSnapshot.scrollLeft, sy=noteViewSnapshot.scrollTop;
+    requestAnimationFrame(()=>{
+      $("viewer").scrollLeft=sx;
+      $("viewer").scrollTop=sy;
+      markers();
+    });
+  }
+  noteViewSnapshot=null;
+}
+$("closeDetail").onclick=closeTrainerNote;
+$("detailPanel").addEventListener("click",e=>{
+  if(e.target===$("detailPanel")) closeTrainerNote();
+});
 
 let trainerSwipeStart=null;
 let trainerDidSwipe=false;
@@ -3741,8 +4528,8 @@ $("viewer").addEventListener("touchend",async e=>{
 
 $("prev").onclick=()=>{if(page>1){$("detailPanel").classList.remove("open");$("viewer").classList.remove("split");page--;render()}};
 $("next").onclick=()=>{if(page<pdf.numPages+1){$("detailPanel").classList.remove("open");$("viewer").classList.remove("split");page++;render()}};
-$("zoomInT").onclick=()=>{trainerZoom=Math.min(3.2,trainerZoom*1.22);render()};
-$("zoomOutT").onclick=()=>{trainerZoom=Math.max(.7,trainerZoom/1.22);render()};
+$("zoomInT").onclick=()=>{trainerZoom=Math.min(8,trainerZoom*1.22);render()};
+$("zoomOutT").onclick=()=>{trainerZoom=Math.max(.45,trainerZoom/1.22);render()};
 $("fitT").onclick=()=>{trainerZoom=1;render()};
 
 function showCriterionDetail(matrix,crit){
@@ -3816,12 +4603,13 @@ document.addEventListener("click",e=>{
 (async()=>{try{await loadDeck();await render()}catch(e){console.error(e);alert("Não foi possível abrir o arquivo da correção.")}})();addEventListener("resize",()=>pages&&render());
 <\/script>
 </body></html>`;
-  const finalLabel=safeTrainerFilename(registerLabel)+" - OBSERVAÇÕES OVT";
-  const finalName=finalLabel+".html";
+  const suggestedName=safeTrainerFilename(registerLabel)+" - Revisão Metodológica EVE";
+  const finalName=askFinalFilename(suggestedName);
+  if(!finalName)return;
   const btn=$("generateViewer");
   const oldLabel=btn.textContent;
   btn.disabled=true;
-  btn.textContent="Preparando arquivo…";
+  btn.textContent="Preparando revisão…";
   try{
     const result=await deliverTrainerFile(finalName,viewer);
     if(result==="shared"){
