@@ -740,7 +740,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v26</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v27 Android</small>
       </div>
     </div>
     <div class="top-actions">
@@ -1119,7 +1119,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=26").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=27").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1488,6 +1488,36 @@ async function loadDocument(file){
     hideConvertOverlay();
   }
 }
+
+
+window.ovtReceiveAndroidFile=async function(){
+  try{
+    if(!window.AndroidBridge || !AndroidBridge.hasIncomingFile()) return false;
+
+    const name=AndroidBridge.getIncomingFileName() || "registro.pdf";
+    const mime=AndroidBridge.getIncomingMimeType() || "application/octet-stream";
+    const total=Number(AndroidBridge.getIncomingChunkCount() || 0);
+    if(!total) return false;
+
+    let b64="";
+    for(let i=0;i<total;i++){
+      b64+=AndroidBridge.getIncomingChunk(i);
+    }
+
+    const binary=atob(b64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+
+    const file=new File([bytes],name,{type:mime});
+    await loadDocument(file);
+    AndroidBridge.clearIncomingFile();
+    return true;
+  }catch(err){
+    console.error("Falha ao receber arquivo do Android:",err);
+    alert("Não foi possível receber o arquivo do celular. "+(err?.message||err));
+    return false;
+  }
+};
 
 async function renderPage(){
   if(!state.pdf)return;
@@ -2096,11 +2126,32 @@ $("exportBackup").onclick=()=>{
 };
 
 async function deliverTrainerFile(filename,text){
+  // Android wrapper: stream the UTF-8 HTML in small Base64 chunks to the native app,
+  // then open Android's share sheet with the generated .html file.
+  if(window.AndroidBridge && typeof AndroidBridge.startFileSave==="function"){
+    try{
+      const enc=new TextEncoder();
+      const bytes=enc.encode(text);
+      AndroidBridge.startFileSave(filename);
+
+      const CHUNK=24576;
+      for(let i=0;i<bytes.length;i+=CHUNK){
+        const part=bytes.subarray(i,Math.min(i+CHUNK,bytes.length));
+        let binary="";
+        for(let j=0;j<part.length;j++) binary+=String.fromCharCode(part[j]);
+        AndroidBridge.appendFileChunk(btoa(binary));
+      }
+      AndroidBridge.finishFileSave();
+      return "shared";
+    }catch(err){
+      console.warn("Android native save failed; falling back",err);
+      try{AndroidBridge.cancelFileSave?.()}catch(_){}
+    }
+  }
+
   const blob=new Blob([text],{type:"text/html;charset=utf-8"});
   const file=new File([blob],filename,{type:"text/html"});
 
-  // Mobile: prefer the native share sheet. This is much more reliable than
-  // forcing a download, and lets the coordinator send directly by WhatsApp.
   if(navigator.share && navigator.canShare?.({files:[file]})){
     try{
       await navigator.share({
@@ -2110,13 +2161,11 @@ async function deliverTrainerFile(filename,text){
       });
       return "shared";
     }catch(err){
-      // If the user cancelled, do not force anything.
       if(err?.name==="AbortError") return "cancelled";
       console.warn("Web Share failed, falling back to download",err);
     }
   }
 
-  // Desktop/browser fallback.
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
   a.href=url;
