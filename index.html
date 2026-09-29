@@ -1687,6 +1687,43 @@ body:has(#sheet:not(.hidden)) .audio-preview{
 .marker-move-hint{
   font-size:7px;color:#9ca5af;margin-top:3px;line-height:1.2
 }
+
+/* ===== v55 • painel permanece aberto + player realmente fora do painel ===== */
+/* O preview de áudio é movido para <body> via JS; estas regras o prendem à área do documento. */
+body > #audioPreview.audio-preview{
+  position:fixed !important;
+  left:16px !important;
+  right:auto !important;
+  bottom:18px !important;
+  top:auto !important;
+  width:min(360px,42vw) !important;
+  z-index:9800 !important;
+  padding:7px 9px !important;
+  border-radius:14px !important;
+  background:rgba(8,9,11,.98) !important;
+  border:1px solid rgba(216,177,87,.58) !important;
+  box-shadow:0 16px 42px rgba(0,0,0,.62) !important;
+}
+@media (orientation:landscape) and (max-height:700px){
+  body > #audioPreview.audio-preview{
+    left:12px !important;
+    right:auto !important;
+    bottom:12px !important;
+    top:auto !important;
+    width:min(330px,38vw) !important;
+  }
+}
+@media (orientation:portrait) and (max-width:700px){
+  body > #audioPreview.audio-preview{
+    left:8px !important;
+    right:8px !important;
+    top:74px !important;
+    bottom:auto !important;
+    width:auto !important;
+  }
+}
+/* Quando não há gravação pronta, o balão fica totalmente fora do caminho. */
+body > #audioPreview:not(.visible){display:none !important}
 </style>
 </head>
 
@@ -2014,6 +2051,12 @@ const state = {
 };
 
 const canvas=$("pdfCanvas"), ctx=canvas.getContext("2d",{alpha:false});
+// Mantém o player de áudio fora do painel de pontuação, inclusive quando o painel usa zoom.
+// Isso evita que o player cubra "Salvar apontamento" no celular.
+const audioPreviewEl=$("audioPreview");
+if(audioPreviewEl && audioPreviewEl.parentElement!==document.body){
+  document.body.appendChild(audioPreviewEl);
+}
 if(ctx){
   try{ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";}catch(e){}
 }
@@ -3103,13 +3146,30 @@ $("viewer").addEventListener("touchend",async e=>{
   }
 },{passive:true});
 
-$("viewer").onclick=e=>{
+async function resetDraftForNextPoint({clearAudio=true}={}){
+  state.selectedCriteria=[];
+  state.criterionDiscounts={};
+  state.standardizationDiscount=null;
+  renderMatrices();renderCriteria();renderDeductionBuilder();renderLiveScorePreview();
+  $("sheetPosition").textContent=`Página ${state.page} • ${state.selectedMatrix}`;
+  $("commentText").value="";
+  if(clearAudio) await clearCurrentAudio();
+}
+
+$("viewer").onclick=async e=>{
   if(viewerDidSwipe)return;
   if(!state.pdf)return;
   if(e.target.classList.contains("marker"))return;
   const r=activeSurface().getBoundingClientRect();
   if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
   state.selectedPoint=pointFromEvent(e);
+
+  // Se o painel já estiver aberto, ele permanece fixo. Apenas prepara um novo apontamento
+  // na posição tocada, sem fechar/reabrir ou alterar o enquadramento do documento.
+  if(!$("sheet").classList.contains("hidden")){
+    await resetDraftForNextPoint();
+    return;
+  }
   openSheet();
 };
 $("newNoteBtn").onclick=()=>{
@@ -3128,13 +3188,7 @@ async function openSheet({autoRecord=false}={}){
       scrollTop:$("viewer").scrollTop
     };
   }
-  state.selectedCriteria=[];
-  state.criterionDiscounts={};
-  state.standardizationDiscount=null;
-  renderMatrices();renderCriteria();renderDeductionBuilder();renderLiveScorePreview();
-  $("sheetPosition").textContent=`Página ${state.page} • ${state.selectedMatrix}`;
-  $("commentText").value="";
-  await clearCurrentAudio();
+  await resetDraftForNextPoint();
   $("sheet").classList.remove("hidden");
   $("sec-correct").classList.add("split-active");
 
@@ -3258,8 +3312,12 @@ async function saveNote(){
   recalcScores();
   $("saveNote").disabled=false;
   $("saveNote").textContent="Salvar apontamento";
-  await closeSheet();
+
+  // Fluxo contínuo de correção: o painel NÃO fecha após salvar.
+  // O marcador aparece imediatamente e o painel fica pronto para o próximo clique na imagem.
+  await resetDraftForNextPoint();
   renderAll();
+  renderMarkers();
 }
 $("saveNote").onclick=saveNote;
 
