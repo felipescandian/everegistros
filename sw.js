@@ -1,5 +1,5 @@
-const CACHE="ovt-app-v28";
-const SHARE_CACHE="ovt-share-v28";
+const CACHE="ovt-app-v29";
+const SHARE_CACHE="ovt-share";
 const APP_SHELL=["./","./index.html","./manifest.webmanifest","./ovt-192.png","./ovt-512.png"];
 
 self.addEventListener("install",event=>{

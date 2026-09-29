@@ -740,7 +740,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v28 WhatsApp</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v29 WhatsApp</small>
       </div>
     </div>
     <div class="top-actions">
@@ -1082,45 +1082,72 @@ $("installAppBtn")?.addEventListener("click",async()=>{
 async function consumeSharedFile(){
   if(!("caches" in window))return false;
   try{
-    const cache=await caches.open("ovt-share-v28");
+    const cacheNames=await caches.keys();
 
-    // First try the canonical key.
-    const canonical=new URL("./__shared_file__",location.href).href;
-    let req=new Request(canonical);
-    let res=await cache.match(req);
+    // Search newest/stable share caches first, but accept any older OVT share cache too.
+    const ordered=[
+      "ovt-share",
+      "ovt-share-v29",
+      "ovt-share-v28",
+      "ovt-share-v2",
+      ...cacheNames.filter(n=>/^ovt-share/i.test(n))
+    ].filter((v,i,a)=>a.indexOf(v)===i);
 
-    // If the browser normalized the request differently, scan the cache.
-    if(!res){
-      const keys=await cache.keys();
-      const match=keys.find(k=>k.url.includes("__shared_file__"));
-      if(match){
-        req=match;
-        res=await cache.match(match);
+    let foundCache=null;
+    let foundRequest=null;
+    let foundResponse=null;
+
+    for(const cacheName of ordered){
+      if(!cacheNames.includes(cacheName)) continue;
+      const cache=await caches.open(cacheName);
+
+      // Try canonical key first.
+      const canonical=new Request(new URL("./__shared_file__",location.href).href);
+      let res=await cache.match(canonical);
+      let req=canonical;
+
+      // Fallback: scan keys because browsers/service workers may normalize the URL.
+      if(!res){
+        const keys=await cache.keys();
+        const match=keys.find(k=>k.url.includes("__shared_file__"));
+        if(match){
+          req=match;
+          res=await cache.match(match);
+        }
+      }
+
+      if(res){
+        foundCache=cache;
+        foundRequest=req;
+        foundResponse=res;
+        break;
       }
     }
 
-    if(!res)return false;
+    if(!foundResponse)return false;
 
-    const blob=await res.blob();
+    const blob=await foundResponse.blob();
     if(!blob || !blob.size) return false;
 
-    const encoded=res.headers.get("X-OVT-Filename")||"registro";
+    const encoded=foundResponse.headers.get("X-OVT-Filename")||"registro";
     let name="registro";
     try{name=decodeURIComponent(encoded)}catch(e){name=encoded}
 
-    const type=res.headers.get("Content-Type")||blob.type||"application/octet-stream";
+    const type=foundResponse.headers.get("Content-Type")||blob.type||"application/octet-stream";
     const file=new File([blob],name,{type});
 
-    // Delete only after we successfully built the File.
-    await cache.delete(req);
-
     $("sharedFileHint").style.display="block";
-    $("sharedFileHint").textContent=`Arquivo recebido: ${name}. Preparando…`;
+    $("sharedFileHint").textContent=`Arquivo recebido: ${name}. Abrindo…`;
 
+    // Only delete AFTER loadDocument succeeds.
     await loadDocument(file);
 
-    $("sharedFileHint").textContent=`✓ ${name} carregado. Informe seu nome e entre para corrigir.`;
-    return true;
+    if(state.pdf){
+      await foundCache.delete(foundRequest);
+      $("sharedFileHint").textContent=`✓ ${name} carregado.`;
+      return true;
+    }
+    return false;
   }catch(err){
     console.error("Falha ao consumir arquivo compartilhado",err);
     return false;
@@ -1128,7 +1155,9 @@ async function consumeSharedFile(){
 }
 
 async function consumeSharedFileWithRetry(){
-  for(let i=0;i<24;i++){
+  // Android/Chrome can hand control to the page before the POST body has
+  // finished being persisted by the service worker.
+  for(let i=0;i<40;i++){
     if(await consumeSharedFile()) return true;
     await new Promise(r=>setTimeout(r,250));
   }
@@ -1153,7 +1182,7 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=28").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=29").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -1190,8 +1219,7 @@ async function startApp(){
     $("sharedFileHint").textContent="Finalizando abertura do arquivo…";
     const ok=await consumeSharedFileWithRetry();
     if(!ok){
-      $("sharedFileHint").textContent="Não consegui recuperar o arquivo. Compartilhe novamente pelo WhatsApp.";
-      alert("O OVT abriu, mas o arquivo do WhatsApp não chegou corretamente. Compartilhe o arquivo novamente para o OVT.");
+      $("sharedFileHint").textContent="O arquivo ainda não chegou ao OVT. Feche e compartilhe novamente pelo WhatsApp.";
       return;
     }
   }
