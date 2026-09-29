@@ -746,7 +746,7 @@ textarea:focus{border-color:rgba(17,156,255,.55);box-shadow:0 0 0 3px rgba(17,15
       <div class="logo">OVT</div>
       <div>
         <h1>CORREÇÃO <span>INTERATIVA</span></h1>
-        <small>comentários, matrizes e áudio diretamente no registro • v31 WhatsApp</small>
+        <small>comentários, matrizes e áudio diretamente no registro • v32 WhatsApp</small>
       </div>
     </div>
     <div class="top-actions">
@@ -1086,6 +1086,7 @@ $("installAppBtn")?.addEventListener("click",async()=>{
 });
 
 
+
 let __shareProgressTimer=null;
 
 function setShareProgress(percent,message){
@@ -1101,96 +1102,78 @@ function setShareProgress(percent,message){
 }
 
 function startShareProgress(){
-  if(__shareProgressTimer) clearInterval(__shareProgressTimer);
-  let p=2;
-  setShareProgress(p,"Recebendo arquivo do WhatsApp…");
-  __shareProgressTimer=setInterval(()=>{
-    if(p<88){
-      p += p<35 ? 4 : p<65 ? 2 : 1;
-      setShareProgress(p,p<45 ? "Recebendo arquivo do WhatsApp…" : "Preparando arquivo…");
-    }
-  },350);
+  setShareProgress(0,"Recebendo arquivo do WhatsApp…");
 }
-
 function finishShareProgress(message){
-  if(__shareProgressTimer){
-    clearInterval(__shareProgressTimer);
-    __shareProgressTimer=null;
-  }
   setShareProgress(100,message||"Arquivo recebido.");
 }
-
 function failShareProgress(message){
-  if(__shareProgressTimer){
-    clearInterval(__shareProgressTimer);
-    __shareProgressTimer=null;
-  }
   const hint=$("sharedFileHint");
   if(hint) hint.textContent=message||"Não consegui recuperar o arquivo recebido.";
 }
 
-let __pendingShareResolve=null;
-let __pendingShareReject=null;
-
-function requestSharedFileFromServiceWorker(){
-  return new Promise(async(resolve,reject)=>{
-    if(!("serviceWorker" in navigator)){
-      reject(new Error("Service Worker indisponível."));
-      return;
-    }
-
-    try{
-      const reg=await navigator.serviceWorker.ready;
-      const sw=navigator.serviceWorker.controller || reg.active;
-      if(!sw){
-        reject(new Error("Service Worker ainda não está ativo."));
-        return;
-      }
-
-      let settled=false;
-      const timer=setTimeout(()=>{
-        if(settled)return;
-        settled=true;
-        navigator.serviceWorker.removeEventListener("message",onMessage);
-        reject(new Error("Tempo esgotado ao receber o arquivo."));
-      },15000);
-
-      function onMessage(event){
-        const data=event.data||{};
-        if(data.type==="OVT_SHARED_FILE" && !settled){
-          settled=true;
-          clearTimeout(timer);
-          navigator.serviceWorker.removeEventListener("message",onMessage);
-          resolve(data);
-        }else if(data.type==="OVT_SHARED_FILE_ERROR" && !settled){
-          settled=true;
-          clearTimeout(timer);
-          navigator.serviceWorker.removeEventListener("message",onMessage);
-          reject(new Error(data.message||"Falha no recebimento."));
-        }
-      }
-
-      navigator.serviceWorker.addEventListener("message",onMessage);
-      sw.postMessage({type:"OVT_GET_SHARED_FILE"});
-    }catch(err){
-      reject(err);
-    }
+function openOvtShareDb(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open("ovt-share-db",1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains("shares")) db.createObjectStore("shares",{keyPath:"id"});
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error("Falha ao abrir armazenamento temporário."));
   });
+}
+
+async function readPendingSharedFile(){
+  const db=await openOvtShareDb();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction("shares","readonly");
+      const req=tx.objectStore("shares").get("pending");
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>reject(req.error);
+    });
+  }finally{
+    db.close();
+  }
+}
+
+async function deletePendingSharedFile(){
+  const db=await openOvtShareDb();
+  try{
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction("shares","readwrite");
+      tx.objectStore("shares").delete("pending");
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error);
+    });
+  }finally{
+    db.close();
+  }
+}
+
+function base64ToUint8(b64){
+  const binary=atob(b64);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+  return bytes;
 }
 
 async function consumeSharedFile(){
   try{
-    const data=await requestSharedFileFromServiceWorker();
-    if(!data || !data.buffer) return false;
+    setShareProgress(80,"Abrindo arquivo recebido…");
+    const item=await readPendingSharedFile();
+    if(!item || !item.b64) return false;
+
+    const bytes=base64ToUint8(item.b64);
+    const blob=new Blob([bytes],{type:item.type||"application/octet-stream"});
+    const file=new File([blob],item.name||"registro",{type:item.type||blob.type});
 
     setShareProgress(92,"Arquivo recebido. Abrindo…");
-
-    const blob=new Blob([data.buffer],{type:data.mime||"application/octet-stream"});
-    const file=new File([blob],data.name||"registro",{type:data.mime||blob.type});
-
     await loadDocument(file);
 
     if(state.pdf){
+      await deletePendingSharedFile();
       finishShareProgress(`✓ ${file.name} carregado.`);
       return true;
     }
@@ -1203,15 +1186,16 @@ async function consumeSharedFile(){
 
 async function consumeSharedFileWithRetry(){
   startShareProgress();
-
-  // First request immediately. If the SW is still taking ownership after an update,
-  // retry a few times with short waits.
-  for(let i=0;i<8;i++){
-    if(await consumeSharedFile()) return true;
-    await new Promise(r=>setTimeout(r,600));
+  for(let i=0;i<20;i++){
+    const item=await readPendingSharedFile().catch(()=>null);
+    if(item && item.b64){
+      setShareProgress(75,"Arquivo entregue ao OVT. Preparando…");
+      return await consumeSharedFile();
+    }
+    setShareProgress(Math.min(70,5+i*3),"Aguardando arquivo do WhatsApp…");
+    await new Promise(r=>setTimeout(r,300));
   }
-
-  failShareProgress("Não consegui recuperar o arquivo. Feche o OVT e compartilhe novamente pelo WhatsApp.");
+  failShareProgress("O arquivo não chegou ao OVT. Compartilhe novamente pelo WhatsApp.");
   return false;
 }
 
@@ -1221,11 +1205,9 @@ async function receiveLaunchedFiles(launchParams){
   try{
     startShareProgress();
     const file=await handles[0].getFile();
-    if(file && (file.type==="application/pdf" || file.type==="application/vnd.openxmlformats-officedocument.presentationml.presentation" || /\.(pdf|pptx)$/i.test(file.name))){
-      setShareProgress(92,"Arquivo recebido. Abrindo…");
-      await loadDocument(file);
-      if(state.pdf) finishShareProgress(`✓ ${file.name} carregado.`);
-    }
+    setShareProgress(90,"Arquivo recebido. Abrindo…");
+    await loadDocument(file);
+    if(state.pdf) finishShareProgress(`✓ ${file.name} carregado.`);
   }catch(err){
     console.error("Falha ao abrir arquivo recebido",err);
     failShareProgress("Não foi possível abrir o arquivo recebido.");
@@ -1237,17 +1219,14 @@ if("launchQueue" in window){
 }
 
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js?v=31").catch(err=>console.warn("SW",err));
+  navigator.serviceWorker.register("./sw.js?v=32").catch(err=>console.warn("SW",err));
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
   if(new URLSearchParams(location.search).get("shared")==="1"){
     $("sharedFileHint").style.display="block";
     startShareProgress();
-    const ok=await consumeSharedFileWithRetry();
-    if(!ok){
-      failShareProgress("O arquivo não chegou ao OVT. Feche e compartilhe novamente pelo WhatsApp.");
-    }
+    await consumeSharedFileWithRetry();
   }
 });
 

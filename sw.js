@@ -1,89 +1,17 @@
-const CACHE="ovt-app-v31";
-const SHARE_CACHE="ovt-share-v31";
+const CACHE="ovt-app-v32";
 const APP_SHELL=["./","./index.html","./manifest.webmanifest","./ovt-192.png","./ovt-512.png"];
 
-let pendingShare=null;
-
-async function persistSharedFile(file){
-  const buffer=await file.arrayBuffer();
-  const meta={
-    name:file.name||"registro",
-    mime:file.type||"application/octet-stream",
-    size:file.size||buffer.byteLength
-  };
-
-  // Fast path: keep it in the current service-worker process.
-  pendingShare={...meta,buffer};
-
-  // Fallback: also save it in Cache Storage in case the SW process restarts.
-  try{
-    const cache=await caches.open(SHARE_CACHE);
-    const key=new Request(new URL("./__shared_file__",self.registration.scope).href);
-    const headers=new Headers({
-      "Content-Type":meta.mime,
-      "X-OVT-Filename":encodeURIComponent(meta.name),
-      "X-OVT-Size":String(meta.size)
-    });
-    const old=await cache.keys();
-    await Promise.all(old.map(k=>cache.delete(k)));
-    await cache.put(key,new Response(buffer,{headers}));
-  }catch(err){
-    console.warn("OVT share cache fallback failed",err);
+function bytesToBase64(bytes){
+  let binary="";
+  const CHUNK=0x8000;
+  for(let i=0;i<bytes.length;i+=CHUNK){
+    binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+CHUNK,bytes.length)));
   }
+  return btoa(binary);
 }
 
-async function readPersistedShare(){
-  if(pendingShare) return pendingShare;
-
-  try{
-    const cacheNames=await caches.keys();
-    const shareNames=[
-      SHARE_CACHE,
-      "ovt-share",
-      "ovt-share-v30",
-      "ovt-share-v29",
-      "ovt-share-v28",
-      "ovt-share-v2",
-      ...cacheNames.filter(n=>/^ovt-share/i.test(n))
-    ].filter((v,i,a)=>a.indexOf(v)===i);
-
-    for(const name of shareNames){
-      if(!cacheNames.includes(name)) continue;
-      const cache=await caches.open(name);
-      const keys=await cache.keys();
-      const req=keys.find(k=>k.url.includes("__shared_file__"));
-      if(!req) continue;
-      const res=await cache.match(req);
-      if(!res) continue;
-
-      const buffer=await res.arrayBuffer();
-      if(!buffer.byteLength) continue;
-
-      const encoded=res.headers.get("X-OVT-Filename")||"registro";
-      let fileName="registro";
-      try{fileName=decodeURIComponent(encoded)}catch(e){fileName=encoded}
-      const mime=res.headers.get("Content-Type")||"application/octet-stream";
-
-      pendingShare={name:fileName,mime,size:buffer.byteLength,buffer};
-      return pendingShare;
-    }
-  }catch(err){
-    console.warn("OVT could not read persisted share",err);
-  }
-
-  return null;
-}
-
-async function clearPersistedShare(){
-  pendingShare=null;
-  try{
-    const names=await caches.keys();
-    for(const name of names.filter(n=>/^ovt-share/i.test(n))){
-      const cache=await caches.open(name);
-      const keys=await cache.keys();
-      await Promise.all(keys.map(k=>cache.delete(k)));
-    }
-  }catch(err){}
+function escJs(s){
+  return JSON.stringify(String(s||""));
 }
 
 self.addEventListener("install",event=>{
@@ -101,43 +29,11 @@ self.addEventListener("activate",event=>{
   })());
 });
 
-self.addEventListener("message",event=>{
-  const data=event.data||{};
-  if(data.type==="OVT_GET_SHARED_FILE"){
-    event.waitUntil((async()=>{
-      const share=await readPersistedShare();
-      if(!share){
-        event.source?.postMessage({
-          type:"OVT_SHARED_FILE_ERROR",
-          message:"Nenhum arquivo compartilhado foi localizado."
-        });
-        return;
-      }
-
-      // Clone before transfer so we keep a fallback copy until the page confirms load.
-      const clone=share.buffer.slice(0);
-      event.source?.postMessage({
-        type:"OVT_SHARED_FILE",
-        name:share.name,
-        mime:share.mime,
-        size:share.size,
-        buffer:clone
-      },[clone]);
-    })());
-  }
-
-  if(data.type==="OVT_CLEAR_SHARED_FILE"){
-    event.waitUntil(clearPersistedShare());
-  }
-});
-
 self.addEventListener("fetch",event=>{
   const url=new URL(event.request.url);
 
   if(event.request.method==="POST" && url.pathname.endsWith("/share-target")){
     event.respondWith((async()=>{
-      let saved=false;
-      let receivedName="";
       try{
         const form=await event.request.formData();
         let file=form.get("file") || form.get("pdf");
@@ -151,22 +47,90 @@ self.addEventListener("fetch",event=>{
           }
         }
 
-        if(file && file.size){
-          receivedName=file.name||"registro";
-          await persistSharedFile(file);
-          saved=true;
+        if(!file || !file.size){
+          const fail=`<!doctype html><meta charset="utf-8">
+          <body style="background:#02060d;color:white;font-family:sans-serif;padding:30px">
+          <h2>OVT Correção</h2>
+          <p>O WhatsApp abriu o OVT, mas não entregou o arquivo.</p>
+          <p>Volte e tente compartilhar novamente.</p></body>`;
+          return new Response(fail,{headers:{"Content-Type":"text/html;charset=UTF-8"}});
         }
+
+        const bytes=new Uint8Array(await file.arrayBuffer());
+        const b64=bytesToBase64(bytes);
+        const name=file.name||"registro";
+        const type=file.type||"application/octet-stream";
+
+        // IMPORTANT: this page itself receives the POST response.
+        // It writes the file to IndexedDB in PAGE context, then redirects to the app.
+        const bridge=`<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OVT • Recebendo arquivo</title>
+<style>
+html,body{margin:0;height:100%;background:#02060d;color:#fff;font-family:Arial,sans-serif}
+.wrap{height:100%;display:grid;place-items:center;padding:24px;box-sizing:border-box}
+.card{width:min(520px,100%);border:1px solid #0d85c9;border-radius:24px;padding:28px;background:#071624;text-align:center}
+h1{margin:0 0 12px;font-size:30px}
+#pct{font-size:52px;font-weight:900;color:#ffc21b;margin:15px 0 10px}
+.track{height:13px;border-radius:999px;overflow:hidden;background:#172433}
+#bar{height:100%;width:0;background:linear-gradient(90deg,#119cff,#ffc21b);transition:width .18s ease}
+#msg{color:#a9bed1;margin-top:14px}
+</style>
+</head>
+<body><div class="wrap"><div class="card">
+<h1>OVT Correção</h1>
+<div id="pct">0%</div>
+<div class="track"><div id="bar"></div></div>
+<div id="msg">Recebendo arquivo do WhatsApp…</div>
+</div></div>
+<script>
+const NAME=${escJs(name)};
+const TYPE=${escJs(type)};
+const B64=${escJs(b64)};
+function prog(p,m){
+ document.getElementById("pct").textContent=p+"%";
+ document.getElementById("bar").style.width=p+"%";
+ if(m) document.getElementById("msg").textContent=m;
+}
+function openDb(){
+ return new Promise((resolve,reject)=>{
+   const r=indexedDB.open("ovt-share-db",1);
+   r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains("shares"))db.createObjectStore("shares",{keyPath:"id"});}
+   r.onsuccess=()=>resolve(r.result);
+   r.onerror=()=>reject(r.error);
+ });
+}
+(async()=>{
+ try{
+   prog(15,"Arquivo recebido do WhatsApp.");
+   const db=await openDb();
+   prog(35,"Preparando armazenamento…");
+   await new Promise((resolve,reject)=>{
+     const tx=db.transaction("shares","readwrite");
+     tx.objectStore("shares").put({id:"pending",name:NAME,type:TYPE,b64:B64,savedAt:Date.now()});
+     tx.oncomplete=()=>resolve();
+     tx.onerror=()=>reject(tx.error);
+   });
+   db.close();
+   prog(75,"Arquivo entregue ao OVT.");
+   await new Promise(r=>setTimeout(r,250));
+   prog(100,"Abrindo correção…");
+   await new Promise(r=>setTimeout(r,250));
+   location.replace("./?shared=1&v=32");
+ }catch(err){
+   document.getElementById("msg").textContent="Falha ao preparar o arquivo: "+(err&&err.message||err);
+ }
+})();
+<\/script></body></html>`;
+
+        return new Response(bridge,{headers:{"Content-Type":"text/html;charset=UTF-8"}});
       }catch(err){
-        console.error("OVT share-target",err);
+        const body=`<!doctype html><meta charset="utf-8"><body style="background:#02060d;color:white;font-family:sans-serif;padding:30px"><h2>OVT Correção</h2><p>Falha ao receber o arquivo: ${String(err&&err.message||err)}</p></body>`;
+        return new Response(body,{headers:{"Content-Type":"text/html;charset=UTF-8"}});
       }
-
-      const target=new URL("./",self.registration.scope);
-      target.searchParams.set("shared","1");
-      target.searchParams.set("saved",saved?"1":"0");
-      target.searchParams.set("v","31");
-      if(receivedName) target.searchParams.set("name",receivedName);
-
-      return Response.redirect(target.href,303);
     })());
     return;
   }
