@@ -1,4 +1,4 @@
-const CACHE="ovt-app-v35";
+const CACHE="ovt-app-v37";
 const APP_SHELL=["./","./index.html","./manifest.webmanifest","./ovt-192.png","./ovt-512.png"];
 
 function bytesToBase64(bytes){
@@ -54,7 +54,7 @@ self.addEventListener("fetch",event=>{
           <h2>OVT Correção</h2>
           <p>O WhatsApp abriu o OVT, mas não enviou o arquivo junto.</p>
           <p>Isso acontece em alguns aparelhos com arquivos do WhatsApp.</p>
-          <button onclick="location.href='./?shared=1&fallback=1&v=35'" style="border:0;border-radius:14px;padding:16px 18px;background:#ffb800;font-weight:800">
+          <button onclick="location.href='./?shared=1&fallback=1&v=37'" style="border:0;border-radius:14px;padding:16px 18px;background:#ffb800;font-weight:800">
             Abrir OVT e selecionar o arquivo
           </button>
           </body></html>`;
