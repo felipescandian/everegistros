@@ -1648,6 +1648,45 @@ body{
 .marker.has-audio:after{background:#d9dde2 !important;color:#111 !important}
 .score,.loss,.matrix-loss,.crit-loss,.timer{color:var(--gold) !important}
 .count,.pagepill,.head-title small,.brand small,.quick-note .hint{color:#d9dde2 !important}
+
+
+/* ===== v54 • áudio fora da pontuação + marcadores reposicionáveis ===== */
+.marker{touch-action:none !important}
+.marker.drag-ready{box-shadow:0 0 0 7px rgba(216,177,87,.20),0 0 24px rgba(216,177,87,.75) !important;transform:translate(-50%,-50%) scale(1.12) !important;cursor:grabbing !important}
+
+/* O player de áudio nunca cobre os botões do painel de pontuação. */
+body:has(#sheet:not(.hidden)) .audio-preview{
+  left:14px !important;
+  right:auto !important;
+  bottom:16px !important;
+  top:auto !important;
+  width:min(360px,42vw) !important;
+  z-index:9200 !important;
+  background:rgba(8,9,11,.97) !important;
+  border-color:rgba(216,177,87,.52) !important;
+  box-shadow:0 16px 42px rgba(0,0,0,.58) !important;
+}
+@media (orientation:portrait) and (max-width:700px){
+  body:has(#sheet:not(.hidden)) .audio-preview{
+    left:8px !important;
+    right:auto !important;
+    top:72px !important;
+    bottom:auto !important;
+    width:min(280px,calc(100vw - 16px)) !important;
+  }
+}
+@media (orientation:landscape) and (max-height:700px){
+  body:has(#sec-correct.split-active) .audio-preview{
+    left:10px !important;
+    right:auto !important;
+    bottom:8px !important;
+    top:auto !important;
+    width:min(330px,40vw) !important;
+  }
+}
+.marker-move-hint{
+  font-size:7px;color:#9ca5af;margin-top:3px;line-height:1.2
+}
 </style>
 </head>
 
@@ -2899,12 +2938,26 @@ $("zoomOut").onclick=async()=>{
 $("fitBtn").onclick=fitWidth;
 $("maxQualityBtn").onclick=maxQualityView;
 let eveResizeTimer=null;
+async function eveApplyResponsiveCorrectionView(){
+  eveApplyDeviceClass();
+  if(!state.pdf)return;
+  const sheetOpen=!$("sheet").classList.contains("hidden");
+  const landscapeCorrection=sheetOpen && window.matchMedia("(orientation: landscape) and (max-height: 700px)").matches;
+  if(landscapeCorrection){
+    // Ao virar o celular durante a correção, entra direto no layout lado a lado e ajusta a página.
+    $("sec-correct").classList.add("split-active");
+    await fitWidth();
+    renderMarkers();
+  }else{
+    await maxQualityView();
+  }
+}
 window.addEventListener("resize",()=>{
   clearTimeout(eveResizeTimer);
-  eveResizeTimer=setTimeout(()=>{if(state.pdf) maxQualityView(); else eveApplyDeviceClass();},220);
+  eveResizeTimer=setTimeout(()=>{eveApplyResponsiveCorrectionView()},220);
 },{passive:true});
 window.addEventListener("orientationchange",()=>{
-  setTimeout(()=>{if(state.pdf) maxQualityView(); else eveApplyDeviceClass();},320);
+  setTimeout(()=>{eveApplyResponsiveCorrectionView()},360);
 },{passive:true});
 eveApplyDeviceClass();
 
@@ -3213,11 +3266,62 @@ $("saveNote").onclick=saveNote;
 function renderMarkers(){
   const layer=$("markerLayer");
   if(!state.fileType){layer.innerHTML="";return}
-  const cr=activeSurface().getBoundingClientRect(),vr=$("viewer").getBoundingClientRect();
+  const surface=activeSurface();
+  const cr=surface.getBoundingClientRect(),vr=$("viewer").getBoundingClientRect();
   const ox=cr.left-vr.left+$("viewer").scrollLeft,oy=cr.top-vr.top+$("viewer").scrollTop;
   layer.innerHTML=state.notes.map((n,i)=>({...n,num:i+1})).filter(n=>n.page===state.page)
     .map(n=>`<button class="marker ${n.audio?"has-audio":""}" data-id="${n.id}" style="left:${ox+n.x*cr.width}px;top:${oy+n.y*cr.height}px">${n.num}</button>`).join("");
-  layer.querySelectorAll(".marker").forEach(m=>m.onclick=e=>{e.stopPropagation();openMarker(m.dataset.id)});
+
+  layer.querySelectorAll(".marker").forEach(m=>{
+    let holdTimer=null,dragging=false,startX=0,startY=0;
+    const note=()=>state.notes.find(n=>n.id===m.dataset.id);
+    const clearHold=()=>{if(holdTimer){clearTimeout(holdTimer);holdTimer=null}};
+
+    m.addEventListener("contextmenu",e=>e.preventDefault());
+    m.addEventListener("pointerdown",e=>{
+      e.stopPropagation();
+      startX=e.clientX; startY=e.clientY; dragging=false;
+      clearHold();
+      holdTimer=setTimeout(()=>{
+        dragging=true;
+        m.classList.add("drag-ready");
+        try{m.setPointerCapture(e.pointerId)}catch(_){ }
+        try{navigator.vibrate?.(30)}catch(_){ }
+      },430);
+    });
+    m.addEventListener("pointermove",e=>{
+      if(!dragging){
+        if(Math.hypot(e.clientX-startX,e.clientY-startY)>12)clearHold();
+        return;
+      }
+      e.preventDefault();e.stopPropagation();
+      const n=note(); if(!n)return;
+      const r=activeSurface().getBoundingClientRect();
+      n.x=+clamp((e.clientX-r.left)/r.width,0,1).toFixed(5);
+      n.y=+clamp((e.clientY-r.top)/r.height,0,1).toFixed(5);
+      const vr2=$("viewer").getBoundingClientRect();
+      const ox2=r.left-vr2.left+$("viewer").scrollLeft;
+      const oy2=r.top-vr2.top+$("viewer").scrollTop;
+      m.style.left=(ox2+n.x*r.width)+"px";
+      m.style.top=(oy2+n.y*r.height)+"px";
+    });
+    const finish=e=>{
+      clearHold();
+      const wasDragging=dragging;
+      dragging=false;
+      m.classList.remove("drag-ready");
+      try{m.releasePointerCapture(e.pointerId)}catch(_){ }
+      if(wasDragging){
+        e.preventDefault();e.stopPropagation();
+        renderLog();renderSummary();
+      }else if(e.type==="pointerup"){
+        e.preventDefault();e.stopPropagation();
+        openMarker(m.dataset.id);
+      }
+    };
+    m.addEventListener("pointerup",finish);
+    m.addEventListener("pointercancel",finish);
+  });
 }
 
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
@@ -3558,7 +3662,7 @@ $("finishBtn").onclick=()=>go("finish");
 
 function getProjectData(){
   return {
-    app:"EVE Revisão Metodológica",version:"2.0",
+    app:"EVE Revisão Metodológica",version:"2.1",
     coordinator:state.coordinator,filename:state.filename,fileType:state.fileType,score:baseScore(),
     matrices:MATRICES.map(matrixData),
     criteria:CRITERIA.map(c=>({id:c.id,name:c.full,max:c.max,current:state.scores[c.id],loss:+(c.max-state.scores[c.id]).toFixed(1)})),
