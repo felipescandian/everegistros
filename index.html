@@ -2581,7 +2581,7 @@ function ensureConvertOverlay(){
   overlay.innerHTML=`
     <div class="convert-card">
       <div class="convert-spin"></div>
-      <h3>Convertendo PowerPoint…</h3>
+      <h3 id="convertTitle">Preparando arquivo…</h3>
       <div style="font:900 26px/1 'Barlow Condensed';color:#ffc21b;margin:8px 0 7px" id="convertPercent">0%</div>
       <div style="height:9px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.10);margin:0 0 9px">
         <div id="convertBar" style="width:0%;height:100%;background:linear-gradient(90deg,#777e85,#eef1f4);transition:width .22s ease"></div>
@@ -2601,22 +2601,25 @@ function setConvertProgress(percent,message){
   if(bar) bar.style.width=p+"%";
   if(status && message) status.textContent=message;
 }
-function showConvertOverlay(message){
+function showConvertOverlay(message,title){
   const overlay=ensureConvertOverlay();
-  setConvertProgress(0,message||"Preparando PowerPoint…");
+  const titleEl=overlay.querySelector("#convertTitle");
+  if(titleEl) titleEl.textContent=title || "Preparando arquivo…";
+  setConvertProgress(0,message||"Preparando arquivo…");
   overlay.classList.add("show");
 }
 function hideConvertOverlay(){
   const overlay=$("convertOverlay");
   if(overlay) overlay.classList.remove("show");
 }
-async function convertPptxToPdf(file){
+async function convertDocumentToPdf(file, mode="convert"){
   const converterUrl="https://ovt-converter.onrender.com";
   const fd=new FormData();
   fd.append("file",file,file.name);
 
-  showConvertOverlay("Preparando envio…");
-  setConvertProgress(2,"Preparando envio…");
+  const isRepair=mode==="repair";
+  showConvertOverlay(isRepair?"Ajustando PDF para compatibilidade…":"Preparando envio…",isRepair?"Ajustando PDF…":"Convertendo para PDF…");
+  setConvertProgress(2,isRepair?"Preparando PDF…":"Preparando envio…");
 
   return await new Promise((resolve,reject)=>{
     const xhr=new XMLHttpRequest();
@@ -2637,13 +2640,13 @@ async function convertPptxToPdf(file){
         // Upload occupies 5% to 55%.
         const p=5+(e.loaded/e.total)*50;
         simulated=Math.max(simulated,p);
-        setConvertProgress(p,"Enviando PowerPoint…");
+        setConvertProgress(p,isRepair?"Enviando PDF para ajuste…":"Enviando PowerPoint…");
       }
     };
 
     xhr.upload.onload=()=>{
       simulated=Math.max(simulated,56);
-      setConvertProgress(simulated,"Arquivo enviado. Convertendo para PDF…");
+      setConvertProgress(simulated,isRepair?"Arquivo enviado. Ajustando compatibilidade…":"Arquivo enviado. Convertendo para PDF…");
 
       // We cannot know LibreOffice's internal percentage, so progress advances
       // gradually while waiting, stopping at 94% until the server actually responds.
@@ -2651,12 +2654,12 @@ async function convertPptxToPdf(file){
         if(simulated<94){
           const step=simulated<75 ? 2 : simulated<88 ? 1 : .4;
           simulated=Math.min(94,simulated+step);
-          setConvertProgress(simulated,"Convertendo para PDF…");
+          setConvertProgress(simulated,isRepair?"Ajustando PDF…":"Convertendo para PDF…");
         }
       },850);
     };
 
-    xhr.onload=()=>{
+    xhr.onload=async()=>{
       cleanup();
       if(xhr.status>=200 && xhr.status<300){
         const blob=xhr.response;
@@ -2664,11 +2667,23 @@ async function convertPptxToPdf(file){
           reject(new Error("O conversor retornou um PDF vazio."));
           return;
         }
-        setConvertProgress(100,"Conversão concluída. Abrindo o PDF…");
+        try{
+          const head=new Uint8Array(await blob.slice(0,5).arrayBuffer());
+          const signature=String.fromCharCode(...head);
+          if(signature!=="%PDF-"){
+            const detail=await blob.text().catch(()=>"");
+            reject(new Error(detail.slice(0,180)||"O conversor não retornou um PDF válido."));
+            return;
+          }
+        }catch(validationError){
+          reject(validationError);
+          return;
+        }
+        setConvertProgress(100,isRepair?"PDF ajustado. Abrindo…":"Conversão concluída. Abrindo o PDF…");
         setTimeout(()=>{
           resolve(new File(
             [blob],
-            file.name.replace(/\.pptx$/i,"")+".pdf",
+            file.name.replace(/\.(ppt|pptx|pdf)$/i,"")+".pdf",
             {type:"application/pdf"}
           ));
         },220);
@@ -2706,7 +2721,7 @@ async function detectDocumentType(file){
   const mime=(file?.type||"").toLowerCase();
 
   if(lower.endsWith(".pdf") || mime==="application/pdf") return "pdf";
-  if(lower.endsWith(".pptx") ||
+  if(lower.endsWith(".pptx") || lower.endsWith(".ppt") ||
      mime==="application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
      mime==="application/vnd.ms-powerpoint") return "pptx";
 
@@ -2737,7 +2752,7 @@ async function loadDocument(file){
     let sourceName=file.name;
 
     if(isPptx){
-      pdfFile=await convertPptxToPdf(file);
+      pdfFile=await convertDocumentToPdf(file,"convert");
     }
 
     state.filename=sourceName;
@@ -2747,7 +2762,22 @@ async function loadDocument(file){
     state.pdfBase64=await fileToBase64(pdfFile);
     state.page=1;
     state.scale=1.2;
-    state.pdf=await pdfjsLib.getDocument({data:state.pdfBytes.slice(0)}).promise;
+
+    try{
+      state.pdf=await pdfjsLib.getDocument({data:state.pdfBytes.slice(0)}).promise;
+    }catch(firstPdfError){
+      // Alguns PDFs chegam válidos para visualizadores comuns, mas com estrutura interna
+      // que o PDF.js não consegue interpretar. Nesses casos, normalizamos automaticamente
+      // no mesmo conversor usado pelo PowerPoint, sem exigir que o professor refaça o arquivo.
+      if(!isPdf) throw firstPdfError;
+      console.warn("PDF incompatível com PDF.js. Tentando normalização automática.",firstPdfError);
+      setDocStatus?.("Este PDF precisa de um pequeno ajuste de compatibilidade. Fazendo automaticamente…");
+      const repairedPdf=await convertDocumentToPdf(file,"repair");
+      state.pdfBytes=await repairedPdf.arrayBuffer();
+      state.pdfBase64=await fileToBase64(repairedPdf);
+      state.pdf=await pdfjsLib.getDocument({data:state.pdfBytes.slice(0)}).promise;
+      setDocStatus?.("PDF ajustado automaticamente e pronto para correção.");
+    }
     state.pages=state.pdf.numPages;
     $("pageIndicator").textContent=`1 / ${state.pages}`;
 
@@ -3532,10 +3562,11 @@ async function ensureMicStream(){
 
 function supportedAudioMime(){
   const candidates=[
-    "audio/webm;codecs=opus",
-    "audio/webm",
+    // MP4/AAC primeiro: melhor compatibilidade entre Android, iPhone e Safari.
     "audio/mp4;codecs=mp4a.40.2",
     "audio/mp4",
+    "audio/webm;codecs=opus",
+    "audio/webm",
     "audio/ogg;codecs=opus"
   ];
   if(!window.MediaRecorder) return "";
@@ -3720,7 +3751,7 @@ $("finishBtn").onclick=()=>go("finish");
 
 function getProjectData(){
   return {
-    app:"EVE Revisão Metodológica",version:"2.1",
+    app:"EVE Revisão Metodológica",version:"2.2",
     coordinator:state.coordinator,filename:state.filename,fileType:state.fileType,score:baseScore(),
     matrices:MATRICES.map(matrixData),
     criteria:CRITERIA.map(c=>({id:c.id,name:c.full,max:c.max,current:state.scores[c.id],loss:+(c.max-state.scores[c.id]).toFixed(1)})),
@@ -3827,6 +3858,24 @@ function askFinalFilename(defaultBase){
   return name;
 }
 
+async function getStandalonePdfJsAssets(){
+  const libUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+  const workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  try{
+    const pair=await Promise.all([
+      fetch(libUrl,{cache:"force-cache"}).then(r=>{if(!r.ok)throw new Error("pdf.js");return r.text()}),
+      fetch(workerUrl,{cache:"force-cache"}).then(r=>{if(!r.ok)throw new Error("worker");return r.text()})
+    ]);
+    return {
+      lib:pair[0].split("</script").join("<\\/script"),
+      worker:pair[1]
+    };
+  }catch(err){
+    console.warn("Não foi possível embutir o PDF.js. Usando CDN como fallback.",err);
+    return {lib:"",worker:""};
+  }
+}
+
 $("generateViewer").onclick=async()=>{
   if(!state.pdf || !state.pdfBase64){
     alert("Abra um PDF ou PPTX antes de finalizar.");
@@ -3855,6 +3904,9 @@ $("generateViewer").onclick=async()=>{
     criteria:CRITERIA.map(c=>({id:c.id,label:c.label,full:c.full,max:c.max,current:state.scores[c.id],loss:+(c.max-state.scores[c.id]).toFixed(1)}))
   };
   const data=JSON.stringify(payload).replace(/</g,"\\u003c");
+  const pdfAssets=await getStandalonePdfJsAssets();
+  const inlinePdfJs=pdfAssets.lib;
+  const inlinePdfWorker=JSON.stringify(pdfAssets.worker);
   const viewer=`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -3862,9 +3914,7 @@ $("generateViewer").onclick=async()=>{
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#02060d">
 <title>${trainerName} • Revisão Metodológica EVE</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/pptxviewjs@1.1.9/dist/PptxViewJS.min.js"><\/script>
+${inlinePdfJs ? `<script>${inlinePdfJs}<\/script>` : `<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>`}
 <style>
 *{box-sizing:border-box}body{margin:0;background:#02060d;color:#f5f8fc;font-family:Arial,sans-serif}
 .app{width:min(100%,1600px);max-width:1600px;margin:auto;padding:10px 10px 40px}
@@ -4312,11 +4362,77 @@ header{box-shadow:0 0 0 1px rgba(255,255,255,.02) inset}
   #detailPanel .detail-actions{position:sticky;bottom:-14px;background:linear-gradient(180deg,rgba(6,17,29,.25),#06111d 30%);padding:10px 0 2px}
 }
 
+/* Velocidade de reprodução para quem recebe a revisão */
+.audio-speed-controls{
+  display:flex;align-items:center;gap:5px;margin:5px 0 2px;
+}
+.audio-speed-controls button{
+  min-width:42px;height:27px;padding:0 8px;border-radius:8px;
+  border:1px solid rgba(216,177,87,.28);background:#111317;color:#dce2e8;
+  font:800 9px Inter,system-ui,sans-serif;cursor:pointer;
+}
+.audio-speed-controls button.active{
+  border-color:#d8b157;background:#d8b157;color:#0b0c0e;
+}
+
+/* Escolha do aparelho ao abrir a devolutiva */
+.device-gate{
+  position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;
+  padding:18px;background:radial-gradient(circle at 50% 15%,rgba(216,177,87,.10),transparent 32%),#050505;
+}
+.device-gate.hidden{display:none}
+.device-card{
+  width:min(520px,100%);padding:22px;border-radius:20px;border:1px solid rgba(216,177,87,.34);
+  background:linear-gradient(180deg,#121316,#090a0c);box-shadow:0 24px 70px rgba(0,0,0,.58);text-align:center
+}
+.device-brand{font-size:12px;font-weight:900;letter-spacing:.14em;color:#d8b157;text-transform:uppercase}
+.device-card h2{margin:8px 0 7px;font-size:25px;color:#f1f3f5}
+.device-card p{margin:0 auto 16px;max-width:420px;color:#aeb6bf;font-size:12px;line-height:1.5}
+.device-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.device-option{
+  min-height:92px;border-radius:15px;border:1px solid rgba(216,177,87,.26);
+  background:linear-gradient(180deg,#17191d,#101114);color:#f0f2f4;cursor:pointer;padding:13px 10px;
+  font-weight:900;font-size:15px
+}
+.device-option span{display:block;margin-top:6px;color:#9fa8b2;font-size:9px;font-weight:700;line-height:1.35}
+.device-option.recommended{border-color:#d8b157;box-shadow:0 0 0 1px rgba(216,177,87,.14) inset}
+.device-detected{margin-top:12px;color:#8f98a3;font-size:9px}
+.device-mode-btn{
+  margin-left:8px;border:1px solid rgba(216,177,87,.28);background:#111317;color:#d8b157;
+  border-radius:8px;padding:5px 8px;font-size:9px;font-weight:900;cursor:pointer
+}
+@media(max-width:520px){.device-options{grid-template-columns:1fr}.device-card{padding:18px}.device-option{min-height:76px}}
+
+/* Compatibilidade iPhone / Safari */
+.eve-boot{
+  margin:0 0 10px;padding:12px 14px;border-radius:13px;
+  border:1px solid rgba(216,177,87,.28);background:#101114;color:#dde2e8;
+  font-size:12px;line-height:1.45
+}
+.eve-boot b{color:#d8b157}.eve-boot.ok{display:none}.eve-boot.error{border-color:rgba(255,92,105,.45)}
+.ios-help{display:none;margin-top:6px;color:#aeb6bf;font-size:10px}
+@supports (-webkit-touch-callout:none){.ios-help{display:block}}
+
 </style></head>
-<body><div class="app">
+<body>
+<div class="device-gate" id="deviceGate">
+  <div class="device-card">
+    <div class="device-brand">EVE • Revisão Metodológica</div>
+    <h2>Como você está abrindo?</h2>
+    <p>Escolha o seu aparelho. O conteúdo, os apontamentos e os áudios são os mesmos; muda apenas a forma de carregamento para entregar a melhor qualidade possível em cada sistema.</p>
+    <div class="device-options">
+      <button class="device-option" id="chooseAndroid">Android<span>Qualidade máxima e renderização completa.</span></button>
+      <button class="device-option" id="chooseIOS">iPhone / iOS<span>Qualidade alta com carregamento otimizado para Safari.</span></button>
+    </div>
+    <div class="device-detected" id="deviceDetected"></div>
+  </div>
+</div>
+<div class="app">
+<div class="eve-boot" id="eveBoot"><b>Abrindo a correção…</b><div id="eveBootMsg">Preparando o registro e os áudios.</div><div class="ios-help">No iPhone, prefira abrir este arquivo pelo Safari/Arquivos em vez da prévia interna do WhatsApp.</div></div>
 <header>
   <h1 id="trainerTitle"></h1>
   <div class="meta" id="meta"></div>
+  <button class="device-mode-btn" id="deviceModeBtn" type="button">Modo do aparelho</button>
 </header>
 <div class="card"><div class="hd">Registro corrigido</div><div class="bd">
 <div class="viewer" id="viewer"><canvas id="c"></canvas><img id="pptxImg" alt="Slide do PowerPoint" style="display:none;max-width:100%;height:auto;background:#fff"><div class="markers" id="markers"></div><div class="summary-slide" id="finalSlide"></div></div>
@@ -4352,15 +4468,100 @@ header{box-shadow:0 0 0 1px rgba(255,255,255,.02) inset}
 <div class="card" id="resultCard" style="display:none"><div class="hd">Detalhamento dos apontamentos</div><div class="bd"><div class="summary" id="summary"></div><div class="summary-detail" id="summaryDetail"></div></div></div>
 </div>
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+(function(){
+  var boot=document.getElementById("eveBoot"), msg=document.getElementById("eveBootMsg");
+  window.__eveBoot=function(text,isError){
+    if(!boot)return;
+    if(text && msg)msg.textContent=text;
+    boot.classList.toggle("error",!!isError);
+    if(!isError && text==="ok")boot.classList.add("ok");
+  };
+})();
 
+if(typeof pdfjsLib!=="undefined"){
+  try{
+    const __eveWorkerSource=${inlinePdfWorker};
+    if(__eveWorkerSource){
+      const __eveWorkerBlob=new Blob([__eveWorkerSource],{type:"text/javascript"});
+      pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(__eveWorkerBlob);
+    }else{
+      pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+  }catch(_){
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+}
 
 const DATA=${data},$=id=>document.getElementById(id),fmt=n=>Number(n).toFixed(1).replace(".",",");
 $("trainerTitle").textContent=(DATA.trainerName||"Treinador")+" • Revisão Metodológica";
 $("meta").textContent=(DATA.registerLabel||DATA.filename||"Registro")+" • Responsável: "+DATA.coordinator+" • Desenvolvido por Felipe Scandian | EVE";
 let pdf=null,pptxViewer=null,page=1,pages=0,trainerZoom=1;
 let relatedHits=[],relatedIndex=0,noteViewSnapshot=null;
+let deviceMode=null, appStarted=false, currentRenderTask=null;
 const canvas=$("c"),ctx=canvas.getContext("2d"),pptxImg=$("pptxImg");
+
+function detectedIOS(){
+  const ua=navigator.userAgent||"";
+  return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+}
+function updateDeviceRecommendation(){
+  const ios=detectedIOS();
+  $("chooseIOS").classList.toggle("recommended",ios);
+  $("chooseAndroid").classList.toggle("recommended",!ios);
+  $("deviceDetected").textContent=ios
+    ? "Detectamos um dispositivo Apple. Recomendação: iPhone / iOS."
+    : "Detectamos um dispositivo não-iOS. Recomendação: Android.";
+}
+function showDeviceGate(){
+  updateDeviceRecommendation();
+  $("deviceGate").classList.remove("hidden");
+}
+async function chooseDevice(mode){
+  deviceMode=mode;
+  document.documentElement.dataset.deviceMode=mode;
+  $("deviceGate").classList.add("hidden");
+  window.__eveBoot&&window.__eveBoot(mode==="ios"?"Preparando modo iPhone / iOS…":"Preparando modo Android…",false);
+  if(!appStarted){
+    appStarted=true;
+    await startTrainerViewer();
+  }else if(pdf){
+    await render();
+  }
+}
+$("chooseAndroid").onclick=()=>chooseDevice("android");
+$("chooseIOS").onclick=()=>chooseDevice("ios");
+$("deviceModeBtn").onclick=showDeviceGate;
+updateDeviceRecommendation();
+
+function addAudioSpeedControls(audio){
+  if(!audio || audio.dataset.speedReady==="1")return;
+  audio.dataset.speedReady="1";
+  const controls=document.createElement("div");
+  controls.className="audio-speed-controls";
+  [1,1.5,2].forEach(rate=>{
+    const b=document.createElement("button");
+    b.type="button";
+    b.textContent=(rate===1.5?"1,5x":rate+"x");
+    b.dataset.rate=String(rate);
+    if(rate===1)b.classList.add("active");
+    b.addEventListener("click",e=>{
+      e.preventDefault();e.stopPropagation();
+      audio.playbackRate=rate;
+      audio.defaultPlaybackRate=rate;
+      controls.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));
+    });
+    controls.appendChild(b);
+  });
+  audio.insertAdjacentElement("afterend",controls);
+}
+function refreshAudioSpeedControls(root=document){
+  if(root?.matches?.("audio"))addAudioSpeedControls(root);
+  root?.querySelectorAll?.("audio").forEach(addAudioSpeedControls);
+}
+refreshAudioSpeedControls();
+new MutationObserver(muts=>muts.forEach(m=>m.addedNodes.forEach(n=>{
+  if(n.nodeType===1)refreshAudioSpeedControls(n);
+}))).observe(document.body,{childList:true,subtree:true});
 
 function trainerSurface(){
   return DATA.fileType==="pptx" && pptxImg.style.display!=="none" ? pptxImg : canvas;
@@ -4390,15 +4591,38 @@ async function trainerCapture(ms=3500){
 }
 
 function b64(){
-  const s=atob(DATA.fileBase64),a=new Uint8Array(s.length);
-  for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);
-  return a;
+  // Decodificação em blocos: reduz muito o pico de memória no Safari/iPhone.
+  const source=DATA.fileBase64||"";
+  const chunkChars=32768;
+  const blocks=[];
+  let total=0;
+  for(let i=0;i<source.length;i+=chunkChars){
+    let end=Math.min(source.length,i+chunkChars);
+    if(end<source.length) end-=((end-i)%4);
+    if(end<=i) end=Math.min(source.length,i+4);
+    const bin=atob(source.slice(i,end));
+    const part=new Uint8Array(bin.length);
+    for(let j=0;j<bin.length;j++)part[j]=bin.charCodeAt(j);
+    blocks.push(part);total+=part.length;i=end-chunkChars;
+  }
+  const out=new Uint8Array(total);
+  let offset=0;
+  blocks.forEach(part=>{out.set(part,offset);offset+=part.length});
+  return out;
 }
 function noteTotal(n){return (n.deductions||[]).reduce((s,d)=>s+d.discount,0)}
 function matrixLoss(matrix){return DATA.notes.filter(n=>n.matrix===matrix).reduce((s,n)=>s+noteTotal(n),0)}
 
 async function loadDeck(){
-  pdf=await pdfjsLib.getDocument({data:b64()}).promise;
+  const bytes=b64();
+  const options={data:bytes};
+  if(deviceMode==="ios"){
+    // Opções conservadoras para Safari/iOS: evitam picos de processamento sem alterar o conteúdo do PDF.
+    options.useWorkerFetch=false;
+    options.isEvalSupported=false;
+    options.stopAtErrors=false;
+  }
+  pdf=await pdfjsLib.getDocument(options).promise;
   pages=pdf.numPages;
 }
 
@@ -4489,18 +4713,21 @@ async function render(){
   // A devolutiva usa o MESMO princípio de qualidade máxima do corretor.
   // Desktop e celular têm comportamento próprio, sem reduzir a resolução do PDF salvo.
   const mobile=window.matchMedia("(max-width:700px)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isIOS=deviceMode==="ios";
   const viewerWidth=Math.max(220,$("viewer").clientWidth-4);
   const fitScale=Math.max(.25,viewerWidth/raw.width);
   const displayScale=Math.max(.25,Math.min(8,fitScale*trainerZoom));
   const displayVp=p.getViewport({scale:displayScale});
 
-  const dpr=Math.min(Math.max(window.devicePixelRatio||1,1),4);
-  const oversample=mobile ? 1.45 : 1.28;
+  // Dois perfis de renderização. O iOS continua nítido, mas evita canvases gigantes
+  // que fazem o Safari encerrar a página com tela branca.
+  const dprCap=isIOS ? 3 : 4;
+  const dpr=Math.min(Math.max(window.devicePixelRatio||1,1),dprCap);
+  const oversample=isIOS ? 1.32 : (mobile ? 1.48 : 1.30);
   let renderScale=displayScale*dpr*oversample;
 
-  // Limites altos, mas seguros, iguais ao visualizador principal.
-  const edgeLimit=mobile ? 8192 : 12288;
-  const areaLimit=mobile ? 38_000_000 : 70_000_000;
+  const edgeLimit=isIOS ? 7168 : (mobile ? 9216 : 12288);
+  const areaLimit=isIOS ? 28_000_000 : (mobile ? 44_000_000 : 70_000_000);
   let renderVp=p.getViewport({scale:renderScale});
   const edge=Math.max(renderVp.width,renderVp.height);
   if(edge>edgeLimit){
@@ -4522,12 +4749,23 @@ async function render(){
   try{ctx.clearRect(0,0,canvas.width,canvas.height)}catch(e){}
   try{ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high"}catch(e){}
 
-  await p.render({
+  if(currentRenderTask){
+    try{currentRenderTask.cancel()}catch(_){}
+    currentRenderTask=null;
+  }
+  currentRenderTask=p.render({
     canvasContext:ctx,
     viewport:renderVp,
     intent:"display"
-  }).promise;
-  markers();
+  });
+  try{
+    await currentRenderTask.promise;
+    markers();
+  }catch(err){
+    if(err?.name!=="RenderingCancelledException")throw err;
+  }finally{
+    currentRenderTask=null;
+  }
 }
 
 function markers(){
@@ -4745,7 +4983,7 @@ function matrixHtml(matrix){
 $("summary").innerHTML=DATA.matrices.map(matrixHtml).join("");
 document.querySelectorAll(".clickable-crit").forEach(el=>{
   el.addEventListener("click",e=>{
-    if(e.target.closest("audio"))return;
+    if(e.target.closest("audio") || e.target.closest(".audio-speed-controls"))return;
     showCriterionDetail(el.dataset.matrix, el.dataset.criterion);
   });
 });
@@ -4762,7 +5000,23 @@ document.addEventListener("click",e=>{
   }
 },true);
 
-(async()=>{try{await loadDeck();await render()}catch(e){console.error(e);alert("Não foi possível abrir o arquivo da correção.")}})();addEventListener("resize",()=>pages&&render());
+async function startTrainerViewer(){
+  try{
+    if(typeof pdfjsLib==="undefined")throw new Error("Leitor de PDF indisponível");
+    window.__eveBoot&&window.__eveBoot("Carregando páginas…",false);
+    await loadDeck();
+    await render();
+    window.__eveBoot&&window.__eveBoot("ok",false);
+  }catch(e){
+    console.error(e);
+    const text=deviceMode==="ios"
+      ? "O iPhone não conseguiu iniciar o leitor automaticamente. Abra este arquivo pelo Safari ou pelo app Arquivos e tente novamente."
+      : "Não foi possível iniciar o leitor. Tente abrir o arquivo diretamente no navegador do aparelho.";
+    window.__eveBoot&&window.__eveBoot(text,true);
+  }
+}
+showDeviceGate();
+addEventListener("resize",()=>pages&&deviceMode&&render());
 <\/script>
 </body></html>`;
   const suggestedName=safeTrainerFilename(registerLabel)+" - Revisão Metodológica EVE";
